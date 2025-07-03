@@ -1,0 +1,21 @@
+{
+  "name": "ambient-agents",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "description": "",
+  "dependencies": {
+    "@langchain/langgraph": "^0.3.6",
+    "@langchain/openai": "^0.5.16",
+    "marked": "^15.0.12",
+    "marked-terminal": "^7.3.0",
+    "terminal-image": "^3.1.1",
+    "tsx": "^4.20.3",
+    "zod": "^3.25.67"
+  }
+}
