@@ -30,7 +30,7 @@ input       | (LangGraph) |          draft            -------------      |  (Age
                    |                                                             \/                              |  (LangSmith)  |
            ----------------         Learn preferences over time          -------------------                     -----------------
            |   Memory     | <------------------------------------------- | Memory updating |
-		   ----------------                                              -------------------
+           ----------------                                              -------------------
 ```
 ### Models for building the solution
 ```
@@ -56,7 +56,7 @@ y |
 See [02_workflows.ts](./02_workflows.ts).
 ```
         Prompt   E-mail tool      
-		    \     /
+            \     /
 			 \   /
 E-mail -----> LLM -----> Tool Call -----> Run tool -----> E-mail sent
 ```
@@ -66,19 +66,19 @@ See [03_router_workflow.ts](./03_router_workflow.ts).
 ```
             Router
             Prompt                    Prompt   E-mail tool      
-		       |   ----> { ignore }       \     /
-			   |  /                        \   /
+               |   ----> { ignore }       \     /
+               |  /                        \   /
 E-mail -----> LLM -----> { respond } -----> LLM -----> Tool Call -----> Run tool -----> E-mail sent
                   \
-				   ----> { notify }
+                   ----> { notify }
 ```
 In this case we can add some predefined behaviors based on incoming emails. In this case we can add a routing LLM that decides if we want to send an email, not send an email or notify the inbox owner based on some pre-set criteria. Should the decision be to send an email and e-mail agent is called similar to the first email. This is has more agency as decisions are made up front but the predictability is lower, we don't always send an email.
 #### 3 Agent
 See [04_router_agent.ts](./04_router_agent.ts).
 ```
         Prompt    Tools      
-		    \     /
-			 \   /
+            \     /
+             \   /
 E-mail -----> LLM -----> Tool Call -----> Run tool -----> Loop termination
                ^                             |
                |_____________________________|
@@ -124,3 +124,26 @@ We created our graph with:
 
 ### Persistence
 See [05_persistence.ts](./05_persistence.ts).
+```
+Graph        {state:"I"} --> Node_1 --> Node_2 --> {state: "I heart langgraph"}        Control flow of nodes, edges
+
+Super-steps                  Node_1     Node_2                                         Each sequential node is a separate
+                                                                                       super-step, while parallel nodes
+                                                                                       share the same super-step.
+
+                 --------------------          ------------------------------
+                 | state: "I heart" |          | state: "I heart langgraph" |          State and relevant metadata packaged
+Checkpoints      | next: node_2     |          | next: END                  |          at every super-step
+                 | id: ......       |          | id: ......                 |
+				 | etc: ......      |          | etc: ......                |
+				 --------------------          ------------------------------
+
+                 - - - - - - - - - - - - - - - -
+				 |                             |
+Thread           |   node_1          node_2    |                                       Collection of checkpoints
+				 |                             |
+				 - - - - - - - - - - - - - - - -
+
+StateSnapshot       StateSnapshot()        StateSnapshot()                             Type for checkpoints
+```
+The persistence layer in LangGraph is built on checkpoints, these happen after each node and save the condition of the state after each node processes it.
