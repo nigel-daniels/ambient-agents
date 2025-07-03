@@ -15,15 +15,19 @@ If you want to try these out you will first need to setup your own ChatGPT secre
 ```
 export OPENAI_API_KEY='your_secret_key_value'
 ```
-You also need an API key to use LangSmith, you can sign up and get a key [here](https://smith.langchain.com). As per the OpenAI key you need to export this too:
+You also need an API key to use LangSmith as well as a flag, you can sign up and get a key [here](https://smith.langchain.com). As per the OpenAI key you need to export this too:
 ```
 export LANGCHAIN_API_KEY='your_secret_key_value'
+export LANGSMITH_TRACING=true
 ```
-When you restart the shell or your machine the environment variables `OPENAI_API_KEY` and `LANGCHAIN_API_KEY` will be in place.
+When you restart the shell or your machine the environment variables `OPENAI_API_KEY`, `LANGCHAIN_API_KEY` and `LANGSMITH_TRACING` will be in place.
 
 ### Node and JS
-Before trying any of the exercises don't forget to run `npm install` in the `./ambient-agents` directory to install the Node modules needed.
+Before trying any of the demos don't forget to run `npm install` in the `./ambient-agents` directory to install the Node modules needed. Note: This installs the LangGraph command line tools (such as `langgraphjs`) locally. If you want to install them globally then run:
+```
+npm install -g @langchain/langgraph-cli
+```
 
-In each subdirectory you will find a `*.js` or a `*.ts` file and, sometimes, some supporting files. Each file contains multiple prompts.
+In each subdirectory you will find a `*.js` or a `*.ts` file and, sometimes, some supporting files.
 
-In most cases the initial exercise is ready to run and the other exercises are commented out using the `\* ... *\` comment markers. These equate to the major steps in the Python Jupyter notebooks. In these cases the commented code blocks will have their own calls to the LLM. If you uncomment these blocks then be sure to comment out the last to calls above while you run that exercise, it will reduce run time and costs. If you need to retain any blocks for future exercises they will be noted as such.
+In most cases the entire demo is ready to run, occasionally other exercises are commented out using the `\* ... *\` comment markers.

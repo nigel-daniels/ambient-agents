@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "@langchain/langgraph": "^0.3.6",
+    "@langchain/langgraph-cli": "^0.0.41",
     "@langchain/openai": "^0.5.16",
     "marked": "^15.0.12",
     "marked-terminal": "^7.3.0",

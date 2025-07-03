@@ -50,7 +50,7 @@ routeWorkflow.addEdge('run_tool', END);
 // Here we build the workflow
 const app = routeWorkflow.compile();
 
-// Let's have a go a t visualizing the graph
+// Let's have a go at visualizing the graph
 const graphImg = await app.getGraph().drawMermaidPng();
 const graphImgBuffer = await graphImg.arrayBuffer();
 console.log(await terminalImage.buffer(new Uint8Array(graphImgBuffer)));

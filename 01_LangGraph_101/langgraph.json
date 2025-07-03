@@ -1,0 +1,6 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+	"persistance": "./05_persistence.ts:graph"
+  }
+}

@@ -1,7 +1,7 @@
 # Introduction
 This provides an over view of LangGraph and what this module covers.
 ## Chat
-See [01_chatModels.ts](./01_chatModels.ts).
+See [chat_models](./01_chat_models.ts).
 ```
 
                                   AGENT
@@ -53,7 +53,7 @@ y |
                   Agency
 ```
 #### 1 Prompt LLM
-See [02_workflows.ts](./02_workflows.ts).
+See [workflows](./02_workflows.ts).
 ```
         Prompt   E-mail tool      
             \     /
@@ -62,7 +62,7 @@ E-mail -----> LLM -----> Tool Call -----> Run tool -----> E-mail sent
 ```
 This is a simple prompt based agent where you make a request for an e-mail to be sent, the LLM generates a response but in a structured format to call a tool to send the email. In this case it is the tool that provides some level of agency (it could be an API to and email sender). The agent generates an output to conform to the API and the email is sent. This is highly predictable as a request comes in and an email is sent.
 #### 2 Router workflow
-See [03_router_workflow.ts](./03_router_workflow.ts).
+See [router_workflow](./03_router_workflow.ts).
 ```
             Router
             Prompt                    Prompt   E-mail tool      
@@ -74,7 +74,7 @@ E-mail -----> LLM -----> { respond } -----> LLM -----> Tool Call -----> Run tool
 ```
 In this case we can add some predefined behaviors based on incoming emails. In this case we can add a routing LLM that decides if we want to send an email, not send an email or notify the inbox owner based on some pre-set criteria. Should the decision be to send an email and e-mail agent is called similar to the first email. This is has more agency as decisions are made up front but the predictability is lower, we don't always send an email.
 #### 3 Agent
-See [04_router_agent.ts](./04_router_agent.ts).
+See [router_agent](./04_router_agent.ts).
 ```
         Prompt    Tools      
             \     /
@@ -123,7 +123,7 @@ We created our graph with:
 3. *Edges:* How we link the nodes together.
 
 ### Persistence
-See [05_persistence.ts](./05_persistence.ts).
+See [persistence](./05_persistence.ts).
 ```
 Graph        {state:"I"} --> Node_1 --> Node_2 --> {state: "I heart langgraph"}        Control flow of nodes, edges
 
@@ -147,3 +147,16 @@ Thread           |   node_1          node_2    |                                
 StateSnapshot       StateSnapshot()        StateSnapshot()                             Type for checkpoints
 ```
 The persistence layer in LangGraph is built on checkpoints, these happen after each node and save the condition of the state after each node processes it.
+
+### Interrupts
+See [interrupts](.06_interrupts.ts) (note that the resume is commented out for the first run).
+We can also use interrupts to stop execution of a graph at specific points, often to collect user input, then to continue execution taking into account the users input.
+
+## Tracing
+![Output from the persistence code in LangSmith](./langsmith.png)
+With tracing switched on you can log into [LangSmith](https://smith.langchain.com/) and take a look at the interactions that have taken place during a run of our code. With this we can drill down to the LLM calls, tool calls, what the agent did, calls made. It's possible to drill down into our interactions, this is especially useful for debugging. This requires we set the `LANGCHAIN_API_KEY` and `LANGSMITH_TRACING` flag in our environment.
+
+## Deployment
+[LangGraph Platform](https://www.langchain.com/langgraph-platform) allows us to deploy our project and creates a server with an API, this can be used in conjunction with an interactive IDE called [LangGraph Studio](https://langchain-ai.lang.chat/langgraph/concepts/langgraph_studio/). The configuration of a project relies on the inclusion of the `langgraph.json` configuration file in the project root. The key elements are the graph name and the path to it. The simplest free option is to run `npx @langchain/langgraph-cli dev` in the root folder with the config file, here checkpoints are saved locally. There are hosted environments that use Postgres via the postgres checkpointer.
+
+In the
