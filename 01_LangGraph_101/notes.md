@@ -1,5 +1,5 @@
 # Introduction
-This provides an over view of LangGraph and what this module covers.
+This provides an overview of LangGraph and functions as a quick crash course on the key aspects of LangGraph itself.
 ## Chat
 See [chat_models](./01_chat_models.ts).
 ```
@@ -149,7 +149,7 @@ StateSnapshot       StateSnapshot()        StateSnapshot()                      
 The persistence layer in LangGraph is built on checkpoints, these happen after each node and save the condition of the state after each node processes it.
 
 ### Interrupts
-See [interrupts](.06_interrupts.ts) (note that the resume is commented out for the first run).
+See [interrupts](./06_interrupts.ts) (note that the resume is commented out for the first run).
 We can also use interrupts to stop execution of a graph at specific points, often to collect user input, then to continue execution taking into account the users input.
 
 ## Tracing
@@ -157,6 +157,15 @@ We can also use interrupts to stop execution of a graph at specific points, ofte
 With tracing switched on you can log into [LangSmith](https://smith.langchain.com/) and take a look at the interactions that have taken place during a run of our code. With this we can drill down to the LLM calls, tool calls, what the agent did, calls made. It's possible to drill down into our interactions, this is especially useful for debugging. This requires we set the `LANGCHAIN_API_KEY` and `LANGSMITH_TRACING` flag in our environment.
 
 ## Deployment
-[LangGraph Platform](https://www.langchain.com/langgraph-platform) allows us to deploy our project and creates a server with an API, this can be used in conjunction with an interactive IDE called [LangGraph Studio](https://langchain-ai.lang.chat/langgraph/concepts/langgraph_studio/). The configuration of a project relies on the inclusion of the `langgraph.json` configuration file in the project root. The key elements are the graph name and the path to it. The simplest free option is to run `npx @langchain/langgraph-cli dev` in the root folder with the config file, here checkpoints are saved locally. There are hosted environments that use Postgres via the postgres checkpointer.
+[LangGraph Platform](https://www.langchain.com/langgraph-platform) allows us to deploy our project and creates a server with an API, this can be used in conjunction with an interactive IDE called [LangGraph Studio](https://langchain-ai.lang.chat/langgraph/concepts/langgraph_studio/). The configuration of a project relies on the inclusion of the `langgraph.json` configuration file in the project root. The key elements are the graph name and the path to it. The simplest free option is to run `npx @langchain/langgraph-cli dev` in the root folder with the config file, here checkpoints are saved locally. There are hosted environments that use Postgres via the postgres checkpointer. Note that one thing you need to do in JS is `export` your graph and ensure the graph name you export is the name you used in your `langgraph.json`.
 
-In the
+See [deploy](./07_deploy.ts) graph code and the [config](./langgraph.json) files.
+
+To run these on the local server in the `\01_LangGraph_101` folder run the following:
+```
+npx @langchain/langgraph-cli dev
+```
+On a Mac with Safari I found I had to use the `--tunnel` flag then use a generated Coloudflare URL:
+```
+npx @langchain/langgraph-cli dev --tunnel
+```

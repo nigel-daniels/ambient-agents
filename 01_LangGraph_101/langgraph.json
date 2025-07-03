@@ -1,6 +1,5 @@
 {
-  "dependencies": ["."],
   "graphs": {
-	"persistance": "./05_persistence.ts:graph"
+	"deploy": "./07_deploy.ts:app"
   }
 }
