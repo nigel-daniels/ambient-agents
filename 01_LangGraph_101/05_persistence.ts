@@ -27,14 +27,40 @@ const agent = new createReactAgent({llm: llm, tools: [writeEmail], checkpointer:
 
 
 // Now we can call the agent with an initalized message array
-const result = await agent.invoke({
+// This time we add a thread id to allow us to group our checkpoints together
+const config = {configurable: {thread_id: '1'}};
+const result1 = await agent.invoke({
 	messages: [{
 		role: 'user',
-		content: 'Draft a response to my boss (boss@company.ai) about tomorrow\'s meeting, let him know I\'ll be there.'
+		content: 'What are some good practices for writing emails?',
 	}]
-});
+}, config);
+
+// Now we can take a look at the snapshot of the state
+const state = await agent.getState(config);
+
+// Check the messages in the state
+for (const message of state.values.messages) {
+	console.log(message);
+}
+
+// Ok now let's call the agent again
+const result2 = await agent.invoke({
+	messages: [{
+		role: 'user',
+		content: 'Good, let\'s use lesson 3 to craft a response to my boss confirming that I want to attend Interrupt',
+	}]
+}, config);
+
+// Finally let's tell the agent to send the message
+const result3 = await agent.invoke({
+	messages: [{
+		role: 'user',
+		content: 'I like this, let\'s write the email to boss@company.ai',
+	}]
+}, config);
 
 // Check the result
-for (const message of result.messages) {
+for (const message of result3.messages) {
 	console.log(message);
 }

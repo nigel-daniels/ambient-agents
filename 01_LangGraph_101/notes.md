@@ -57,7 +57,7 @@ See [02_workflows.ts](./02_workflows.ts).
 ```
         Prompt   E-mail tool      
             \     /
-			 \   /
+             \   /
 E-mail -----> LLM -----> Tool Call -----> Run tool -----> E-mail sent
 ```
 This is a simple prompt based agent where you make a request for an e-mail to be sent, the LLM generates a response but in a structured format to call a tool to send the email. In this case it is the tool that provides some level of agency (it could be an API to and email sender). The agent generates an output to conform to the API and the email is sent. This is highly predictable as a request comes in and an email is sent.
@@ -135,14 +135,14 @@ Super-steps                  Node_1     Node_2                                  
                  | state: "I heart" |          | state: "I heart langgraph" |          State and relevant metadata packaged
 Checkpoints      | next: node_2     |          | next: END                  |          at every super-step
                  | id: ......       |          | id: ......                 |
-				 | etc: ......      |          | etc: ......                |
-				 --------------------          ------------------------------
+                 | etc: ......      |          | etc: ......                |
+                 --------------------          ------------------------------
 
                  - - - - - - - - - - - - - - - -
-				 |                             |
+                 |                             |
 Thread           |   node_1          node_2    |                                       Collection of checkpoints
-				 |                             |
-				 - - - - - - - - - - - - - - - -
+                 |                             |
+                 - - - - - - - - - - - - - - - -
 
 StateSnapshot       StateSnapshot()        StateSnapshot()                             Type for checkpoints
 ```
