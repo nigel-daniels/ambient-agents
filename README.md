@@ -11,23 +11,30 @@ This is all based on the LangChain Academy course [Building Ambient Agents with 
 
 ## Set-Up
 ### API Keys
-If you want to try these out you will first need to setup your own ChatGPT secret key in your local environment. [Here](https://chatgpt.en.obiscr.com/blog/posts/2023/How-to-get-api-key/) is how you get a key. Once you have this put it in a local (server side) environment variable. For example in Mac OS, assuming you are using `zsh`, append the following to the file `.zshenv` in you own home directory:
+If you want to try these out you will first need to setup your own ChatGPT secret key in your local environment. [Here](https://chatgpt.en.obiscr.com/blog/posts/2023/How-to-get-api-key/) is how you get a key. You also need an API key to use LangSmith as well as a flag, you can sign up and get a key [here](https://smith.langchain.com). You have two choices on how these are accessed by the code.
+#### Export to the global environment
+You can export these values in your global environment so they can be accessed through the shell you are running. For example in Mac OS, assuming you are using `zsh`, append the following to the file `.zshenv` in you own home directory:
 ```
 export OPENAI_API_KEY='your_secret_key_value'
-```
-You also need an API key to use LangSmith as well as a flag, you can sign up and get a key [here](https://smith.langchain.com). As per the OpenAI key you need to export this too:
-```
 export LANGCHAIN_API_KEY='your_secret_key_value'
 export LANGSMITH_TRACING=true
+export LANGSMITH_PROJECT='interrupt-workshop'
 ```
-When you restart the shell or your machine the environment variables `OPENAI_API_KEY`, `LANGCHAIN_API_KEY` and `LANGSMITH_TRACING` will be in place.
-
+When you restart the shell or your machine the environment variables `OPENAI_API_KEY`, `LANGCHAIN_API_KEY`, `LANGSMITH_TRACING` and `LANGSMITH_PROJECT` will be in place.
+#### Local .env files
+The code is all instrumented to look in the local directory for a `.env` file and load the content into the process environment. To use this approach create a `.env` file in each lesson directory and ensure it has the following content:
+```
+OPENAI_API_KEY='your_openai_api_key'
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY='your_langsmith_api_key'
+LANGSMITH_PROJECT='interrupt-workshop'
+```
 ### Node and JS
 Before trying any of the demos don't forget to run `npm install` in the `./ambient-agents` directory to install the Node modules needed. Note: This installs the LangGraph command line tools (such as `langgraphjs`) locally. If you want to install them globally then run:
 ```
 npm install -g @langchain/langgraph-cli
 ```
 
-In each subdirectory you will find a `*.js` or a `*.ts` file and, sometimes, some supporting files.
+In each subdirectory you will find some `*.js` or `*.ts` files and, sometimes, some supporting files.
 
-In most cases the entire demo is ready to run, occasionally other exercises are commented out using the `\* ... *\` comment markers.
+In most cases the each demo is ready to run, occasionally other exercises are commented out using the `\* ... *\` comment markers. Consult the lesson notes for more details.

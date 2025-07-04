@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';

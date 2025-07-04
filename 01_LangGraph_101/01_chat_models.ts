@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { ChatOpenAI } from '@langchain/openai';
 import { marked } from 'marked';
 import { markedTerminal } from 'marked-terminal';
