@@ -60,7 +60,7 @@ See [workflows](./02_workflows.ts).
              \   /
 E-mail -----> LLM -----> Tool Call -----> Run tool -----> E-mail sent
 ```
-This is a simple prompt based agent where you make a request for an e-mail to be sent, the LLM generates a response but in a structured format to call a tool to send the email. In this case it is the tool that provides some level of agency (it could be an API to and email sender). The agent generates an output to conform to the API and the email is sent. This is highly predictable as a request comes in and an email is sent.
+This is a simple prompt based agent where you make a request for an e-mail to be sent, the LLM generates a response but in a structured format to call a tool to send the email. In this case it is the tool that provides some level of agency (it could be an API to and email sender). The agent generates an output to conform to the API and the email is sent. This is highly predictable as a request comes in and an email is sent. Note that in JS the state is the `Annotation` object.
 #### 2 Router workflow
 See [router_workflow](./03_router_workflow.ts).
 ```
@@ -72,7 +72,7 @@ E-mail -----> LLM -----> { respond } -----> LLM -----> Tool Call -----> Run tool
                   \
                    ----> { notify }
 ```
-In this case we can add some predefined behaviors based on incoming emails. In this case we can add a routing LLM that decides if we want to send an email, not send an email or notify the inbox owner based on some pre-set criteria. Should the decision be to send an email and e-mail agent is called similar to the first email. This is has more agency as decisions are made up front but the predictability is lower, we don't always send an email.
+In this case we can add some predefined behaviors based on incoming emails. In this case we can add a routing LLM that decides if we want to send an email, not send an email or notify the inbox owner based on some pre-set criteria. Should the decision be to send an email and e-mail agent is called similar to the first email. This is has more agency as decisions are made up front but the predictability is lower, we don't always send an email. Note that in JS the state uses the `MessagesAnnotation` object instead of `MessagesState`.
 #### 3 Agent
 See [router_agent](./04_router_agent.ts).
 ```
@@ -153,7 +153,7 @@ See [interrupts](./06_interrupts.ts) (note that the resume is commented out for 
 We can also use interrupts to stop execution of a graph at specific points, often to collect user input, then to continue execution taking into account the users input.
 
 ## Tracing
-![Output from the persistence code in LangSmith](./langsmith.png)
+![Output from the persistence code in LangSmith](./images/langsmith.png)
 With tracing switched on you can log into [LangSmith](https://smith.langchain.com/) and take a look at the interactions that have taken place during a run of our code. With this we can drill down to the LLM calls, tool calls, what the agent did, calls made. It's possible to drill down into our interactions, this is especially useful for debugging. This requires we set the `LANGCHAIN_API_KEY` and `LANGSMITH_TRACING` flag in our environment.
 
 ## Deployment
@@ -165,7 +165,12 @@ To run these on the local server in the `\01_LangGraph_101` folder run the follo
 ```
 npx @langchain/langgraph-cli dev
 ```
-On a Mac with Safari I found I had to use the `--tunnel` flag then use a generated Coloudflare URL:
-```
-npx @langchain/langgraph-cli dev --tunnel
-```
+On a Mac with Safari I found I had to use the Opera browser instead, I tried with `--tunnel` flag as it suggested but it still failed in Safari. You should see something like this:
+![LangGraph Studio view of the code (annotated)](./images/langgraphstudio.png)
+For this you could enter a message at the start node like:
+
+`Draft a response to my boss (boss@company.ai) confirming I want to attend Interrupt!`
+
+Once you hit submit the code will run and the state after each node will appear in the thread panel. You can investigate the states and if you want to drill down further click the ![open in LangSmith](./images/openlangsmith.png) button to open the run in LangSmith (qv).
+
+You can check out the API docs for the local deployment (when it's running) [here](http://127.0.0.1:2024/docs) and review the available endpoints.
