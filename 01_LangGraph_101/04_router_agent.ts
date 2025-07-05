@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
 
 // Let's set up a model that can do something for us
 const llm = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});

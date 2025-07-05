@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { StateGraph, MessagesAnnotation, START, END } from "@langchain/langgraph";
+import { StateGraph, MessagesAnnotation, START, END } from '@langchain/langgraph';
 import terminalImage from 'terminal-image';
 
 // Let's set up a model that can do something for us

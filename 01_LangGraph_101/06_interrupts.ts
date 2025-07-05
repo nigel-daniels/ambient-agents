@@ -1,4 +1,4 @@
-import { StateGraph, Annotation, MemorySaver, Command, interrupt, START, END } from "@langchain/langgraph";
+import { StateGraph, Annotation, MemorySaver, Command, interrupt, START, END } from '@langchain/langgraph';
 import terminalImage from 'terminal-image';
 
 // Let's define a simple state
