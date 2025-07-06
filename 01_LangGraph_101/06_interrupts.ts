@@ -1,3 +1,4 @@
+import { showGraph } from '../shared/utils.ts';
 import { StateGraph, Annotation, MemorySaver, Command, interrupt, START, END } from '@langchain/langgraph';
 import terminalImage from 'terminal-image';
 
@@ -39,9 +40,7 @@ const graph = new StateGraph(State)
 	.compile({checkpointer: new MemorySaver()});
 
 // If you want to see the graph looking good, you could always save it to a file instead!
-const graphImg = await graph.getGraph().drawMermaidPng();
-const graphImgBuffer = await graphImg.arrayBuffer();
-console.log(await terminalImage.buffer(new Uint8Array(graphImgBuffer)));
+showGraph(graph);
 
 // Set our input
 const initialInput = {input: 'hello world'};

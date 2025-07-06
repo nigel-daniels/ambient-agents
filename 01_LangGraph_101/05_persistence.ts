@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { prettyPrint } from '../shared/utils.ts';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
@@ -42,7 +43,7 @@ const state = await agent.getState(config);
 
 // Check the messages in the state
 for (const message of state.values.messages) {
-	console.log(message);
+	prettyPrint(message);
 }
 
 // Ok now let's call the agent again
@@ -63,5 +64,5 @@ const result3 = await agent.invoke({
 
 // Check the result
 for (const message of result3.messages) {
-	console.log(message);
+	prettyPrint(message);
 }

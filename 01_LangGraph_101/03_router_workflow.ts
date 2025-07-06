@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { showGraph } from '../shared/utils.ts';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
@@ -52,9 +53,7 @@ routeWorkflow.addEdge('run_tool', END);
 const app = routeWorkflow.compile();
 
 // Let's have a go at visualizing the graph
-const graphImg = await app.getGraph().drawMermaidPng();
-const graphImgBuffer = await graphImg.arrayBuffer();
-console.log(await terminalImage.buffer(new Uint8Array(graphImgBuffer)));
+showGraph(app);
 
 // Now we can call the workflow to get the result
 const result = await app.invoke({messages: 'Draft a response to my boss (boss@company.ai) about tomorrow\'s meeting, let him know I\'ll be there.'});

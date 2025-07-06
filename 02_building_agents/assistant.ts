@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { formatEmailMarkdown } from '../shared/utils.ts';
+import { prettyPrint, showGraph, formatEmailMarkdown } from '../shared/utils.ts';
 import { TRIAGE_SYSTEM_PROMPT, DEFAULT_BACKGROUND, DEFAULT_TRIAGE_INSTRUCTIONS,
 	TRIAGE_USER_PROMPT, AGENT_SYSTEM_PROMPT, AGENT_TOOLS_PROMPT,
 	DEFAULT_RESPONSE_PREFERENCES, DEFAULT_CAL_PREFERENCES } from '../shared/prompts.ts';
@@ -9,7 +9,6 @@ import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { StateGraph, MessagesAnnotation, Annotation, START, END, Command } from '@langchain/langgraph';
-import terminalImage from 'terminal-image';
 
 // Let's set up a models that can do something for us
 const llmNode = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});
@@ -120,27 +119,29 @@ const toolsByName = tools.reduce((acc, tool) => {
   return acc;
 }, {});
 
+
 // Now we set up a new LLM this one with the tools and no response schema
 const llmWithTools = llmAgent.bindTools(tools, {tool_choice: 'any'});
 
 
 // LLM Node
 async function llmCall(state: state) {
-	return {
-		messages: [
-			await llmWithTools.invoke([{
-				role: 'system',
-				content: format(AGENT_SYSTEM_PROMPT, {
-					toolsPrompt: AGENT_TOOLS_PROMPT,
-					date: new Date().toISOString().split('T')[0],
-					background: DEFAULT_BACKGROUND,
-					responsePreferences: DEFAULT_RESPONSE_PREFERENCES,
-					calPreferences: DEFAULT_CAL_PREFERENCES
-				})
-			}])
-		],
-		...state.messages
-	}
+	const systemPrompt = format(AGENT_SYSTEM_PROMPT, {
+		toolsPrompt: AGENT_TOOLS_PROMPT,
+		date: new Date().toISOString().split('T')[0],
+		background: DEFAULT_BACKGROUND,
+		responsePreferences: DEFAULT_RESPONSE_PREFERENCES,
+		calPreferences: DEFAULT_CAL_PREFERENCES
+	});
+
+	const result = await llmWithTools.invoke([{
+		role: 'system',
+		content: systemPrompt
+	},
+	...state.messages
+	]);
+
+	return {messages: result};
 }
 
 // Tool handeling node
@@ -176,7 +177,7 @@ async function shouldContinue(state: state) {
 			}
 		}
 	}
-	console.log('return: ' + result);
+
 	return result;
 }
 
@@ -185,7 +186,7 @@ const agent = new StateGraph(state)
 	.addNode('llm_call', llmCall)
 	.addNode('tool_handler', toolHandler)
 	.addEdge(START, 'llm_call')
-	.addConditionalEdges('llm_call', shouldContinue, {'tool_handler': 'tool_handler', END: END})
+	.addConditionalEdges('llm_call', shouldContinue, {'tool_handler': 'tool_handler', '__end__': END}) // I had to use '__end__', END failed to match?
 	.addEdge('tool_handler', 'llm_call')
 	.compile();
 
@@ -200,7 +201,11 @@ const overallWorkflow = new StateGraph(state)
 	.addEdge(START, 'triage_router')
 	.compile();
 
+showGraph(overallWorkflow, true);
+
 //////////// Tests ////////////
+// Comment these in to run this locally or comment them out to use LangSmith
+/*
 const emailInput1 = {
 	author: 'System Admin <sysadmin@company.com>',
 	to: 'Development Team <dev@company.com>',
@@ -212,7 +217,7 @@ const response1 = await overallWorkflow.invoke({emailInput: emailInput1});
 
 // Let's view the results (sorry no pretty_print in JS)
 for (const message of response1.messages) {
-	console.log(message);
+	prettyPrint(message);
 }
 
 const emailInput2 = {
@@ -226,5 +231,6 @@ const response2 = await overallWorkflow.invoke({emailInput: emailInput2});
 
 // Let's view the results (sorry no pretty_print in JS)
 for (const message of response2.messages) {
-	console.log(message);
+	prettyPrint(message);
 }
+*/
