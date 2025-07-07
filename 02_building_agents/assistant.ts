@@ -193,7 +193,7 @@ const agent = new StateGraph(state)
 //////////// Assistant ////////////
 // Compose the router and the agent together
 // Note that in JS we need to specify how the router ends
-const overallWorkflow = new StateGraph(state)
+export const overallWorkflow = new StateGraph(state)
 	.addNode('triage_router', triageRouter, {
 		ends: ['response_agent', END]
 	})
@@ -201,11 +201,13 @@ const overallWorkflow = new StateGraph(state)
 	.addEdge(START, 'triage_router')
 	.compile();
 
-showGraph(overallWorkflow, true);
+
 
 //////////// Tests ////////////
 // Comment these in to run this locally or comment them out to use LangSmith
 /*
+showGraph(overallWorkflow, true);
+
 const emailInput1 = {
 	author: 'System Admin <sysadmin@company.com>',
 	to: 'Development Team <dev@company.com>',

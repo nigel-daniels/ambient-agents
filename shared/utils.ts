@@ -3,8 +3,33 @@ import terminalImage from 'terminal-image';
 
 /* Format messages nicely */
 export function prettyPrint(message) {
-	console.log('============ ' + toSentenceCase(message.getType()) + ' Message ============');
-	console.log('Content: ' + message.content);
+	switch (message.getType()) {
+		case 'human':
+			console.log('============ Human Message ============');
+			console.log(message.content);
+			break;
+		case 'ai':
+			console.log('============= AI Message ==============');
+			if (message.tool_calls) {
+				for (const toolCall of message.tool_calls) {
+					console.log(`Tool Calls:
+  ${toolCall.name} (${toolCall.id})
+    Call ID: ${toolCall.id}
+    Args:
+	 ${JSON.stringify(toolCall.args, null, 4)}
+`);
+				}
+			}
+			break;
+		case 'tool':
+			console.log('============ Human Message ============');
+			console.log(message.content);
+			break;
+		default:
+			console.log('============ ' + message.getType() + ' Message ============');
+			console.log(message.content);
+			break;
+	}
 	console.log('');
 }
 

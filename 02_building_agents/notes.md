@@ -65,3 +65,11 @@ Looking at the main decision node itself, note that it is returning a `Command` 
 We define the nodes and compile the graph, essentially were building a react agent but this just breaks it down for us to see all of the moving parts, the llm, the tool.
 ### Assistant (workflow + agent)
 Finally we pull all of this together to construct out assistant.
+If you uncomment the final section you can run this locally using:
+```
+npx tsx assistant.ts
+```
+If you leave these commented then you can run this using:
+```
+npx @langchain/langgraph-cli dev
+```
