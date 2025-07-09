@@ -162,7 +162,7 @@ With tracing switched on you can log into [LangSmith](https://smith.langchain.co
 See [deploy](./07_deploy.ts) graph code and the [config](./langgraph.json) files.
 
 To run these on the local server in the `\01_LangGraph_101` folder run the following:
-```
+```sh
 npx @langchain/langgraph-cli dev
 ```
 On a Mac with Safari I found I had to use the Opera browser instead, I tried with `--tunnel` flag as it suggested but it still failed in Safari. You should see something like this:

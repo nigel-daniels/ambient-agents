@@ -1,4 +1,4 @@
-import { EMAIL_INPUTS, EXPECTED_TOOL_CALLS, TRIAGE_OUTPUTS_LIST, RESPONSE_CRITERIA_LIST } from './datasets.ts';
+import { EMAIL_INPUTS, EXPECTED_TOOL_CALLS, TRIAGE_OUTPUTS_LIST, RESPONSE_CRITERIA_LIST } from '../shared/datasets.ts';
 
 const testCaseIx = 0;
 

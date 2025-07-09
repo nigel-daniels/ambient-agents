@@ -1,4 +1,4 @@
-import { EXAMPLES_TRIAGE } from './datasets.ts';
+import { EXAMPLES_TRIAGE } from '../shared/datasets.ts';
 import { Client, evaluate } from 'langsmith';
 import { emailAssistant } from './assistant.ts';
 import { evaluate } from "langsmith/evaluation";

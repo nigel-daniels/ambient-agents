@@ -72,7 +72,7 @@ These can be created in Langsmith and run against the assistant using the LangSm
 * You can use production traces, annotation queues, synthetic data, etc. to add to the dataset.
 * These work well with evaluators that can be applied to every test case (similarity, match accuracy, etc.).
 ## Test Cases
-See [datasets](./datasets.ts).
+See [datasets](../shared/datasets.ts).
 To start we need to define our tests, some emails to test with along with some things to test. In our case we have the following:
 1. **Input e-mails:** A collection of test e-mails.
 2. **Ground truth classifications:** `[respond, notify, ignore]`
@@ -83,18 +83,18 @@ As a result we have:
 * End-to-end integration tests.
 * Tests for specific steps (unit tests).
 
-The file [datasets test](./datasets.test.ts) just confirms the data set loads ok before we proceed simply run this by calling:
-```
-npx tsx datasets.test.ts
+The file [datasets test](./01_datasets.test.ts) just confirms the data set loads ok before we proceed simply run this by calling:
+```sh
+npx tsx 01_datasets.test.ts
 ```
 
 ### Vitest tests
-See [unit tests](./assistant.vitest.eval.ts).
+See [unit tests](./02_assistant.vitest.eval.ts).
 These tests are stored in the file `assistant.vitest.eval.ts` to let us know we are testing `assistant.ts` using Vitest evaluations. To run the test use:
+```sh
+npx vitest run --config ls.vitest.config.ts 02_assistant.vitest.eval.ts
 ```
-npx vitest run --config ls.vitest.config.ts
-```
-Note that this calls the Vitest [configuration](ls.vitest.config.ts) file `ls.vitest.config`, this configures the reporter to LangChain and test file definition. Once the test run has completed LangSmith provides a link to the Langsmith console:
+Note that this calls the Vitest [configuration](ls.vitest.config.ts) file `ls.vitest.config`, this configures the reporter to LangChain and test file definition. NB. If we wanted to run a suite of tests we would have used the call: `npx vitest run --config ls.vitest.config.ts`, now any files matching the `include` option will be run. Once the test run has completed LangSmith provides a link to the Langsmith console:
 
 ![LangSmith console](./images/langsmith-assistant.png)
 
@@ -105,18 +105,18 @@ The pass in the console is determined by the call `expect(missingToolCalls.lengt
 --------------------           ---------------------            -----------------
 | Dataset Examples |--inputs-->| Agent (LangGraph) |--outputs-->| Test function |---> Evaluator output
 --------------------           ---------------------            -----------------
-          |                                                              ^
-		  ---------------------- referenceOutputs ------------------------
+         |                                                               ^
+		 ----------------------- referenceOutputs ------------------------
 ```
-In this case rather than evaluating the entire assistant we are evaluating tool calling accuracy. We will start by looking at the triage worklow step and understanding if it makes the correct classification, especially the `response` option.
+In this case rather than evaluating the entire assistant we are evaluating tool calling accuracy. We will start by looking at the triage workflow step and understanding if it makes the correct classification, especially the `response` option.
 
-See [triage evaluation](./triage.eval.ts).
+See [triage evaluation](./03_triage.eval.ts).
 
 We start by splitting our data set into an array of inputs and an array of outputs. The inputs look like:
-```
+```javascript
 inputs = [
 	{
-	input: {
+	emailInput: {
 	    author: 'Alice Smith <alice.smith@company.com>',
 	    to: 'John Doe <john.doe@company.com>',
 	    subject: 'Quick question about API documentation',
@@ -124,7 +124,7 @@ inputs = [
 		}
 	},
 	{
-	input: {
+	emailInput: {
 		...
 		}
 	},
@@ -132,19 +132,92 @@ inputs = [
 ];
 ```
 And the corresponding output file:
-```
+```javascript
 outputs = [
-	{outputs: 'respond'},
-	{outputs: 'ignore'},
+	{classificationDecision: 'respond'},
+	{classificationDecision: 'ignore'},
 	...
 ];
 ```
-So when we create our examples these are loaded as independent datasets unlike Python where a single example set is loaded. It's also important to note the `classificationEvaluator` has to return an object conforming to the `ComparisonEvaluationResult` interface, as this is used by the `evaluate` function. This is independent from the LangSmith Client `evaluateRun` function which is marked as *deprecated*.
+Note that JS seems to need the inner attribute names `emailInput` and `classificationDecision` rather than sending un-named attributes, don't forget these later when you reference the inputs and outputs! Also, when we create our examples these are loaded as independent datasets unlike Python where a single example set is loaded. In JS it's important to note the `classificationEvaluator` has to return an object conforming to the `ComparisonEvaluationResult` interface, as this is used by the `evaluate` function. This is independent from the LangSmith Client `evaluateRun` function which is marked as *deprecated*.
 
 You can run this test using the command:
-```
-npx tsx triage.eval.ts
+```sh
+npx tsx 03_triage.eval.ts
 ```
 This will begin running the tests and provide a link to LangSmith where you can review the results.
 
 ![Triage test results](./images/langsmith-triage.png)
+
+Overall this allows us to define the input data, expected output, the function call and the test. It is the final evaluation call that uses the LangSmith API that pulls this together for us. We can use this to handle much larger data sets, and once these are in place we can continue to add tests as we see fit.
+
+### LLM-as-Judge evaluation
+See [test LLM evaluation](./04_llm.eval.ts).
+Here we will see how we can use an LLM to decide if our agent executed well against some success criteria. This is based around predefining a description of the expected output, this is particularly important when evaluating responses. For example, for this `emailInput`:
+```javascript
+{
+    author: 'Alice Smith <alice.smith@company.com>',
+    to: 'Lance Martin <lance@company.com>',
+    subject: 'Quick question about API documentation',
+	emailThread: `Hi Lance,
+
+	I was reviewing the API documentation for the new authentication service and noticed a few endpoints seem to be missing from the specs. Could you help clarify if this was intentional or if we should update the docs?
+
+	Specifically, I'm looking at:
+	- /auth/refresh
+	- /auth/validate
+
+	Thanks!
+	Alice`
+}
+```
+Our response criteria could say:
+```
+• Send email with write_email tool call to acknowledge the question and confirm it will be investigated
+```
+A difficulty with the LLM as evaluator approach is getting the response criteria correct so that the evaluation is what we expect but not overly specific. For example here we are specific about the tool call but more general about the content. These need to be crafted quite carefully.
+
+The next issue is defining the system prompt we use to make this assessment, this is critical in getting appropriate assessments and is likely to take many iterations to perfect. For example this is the `RESPONSE_CRITERIA_SYSTEM_PROMPT` used here:
+```
+You are evaluating an email assistant that works on behalf of a user.
+
+You will see a sequence of messages, starting with an email sent to the user.
+
+You will then see the assistant's response to this email on behalf of the user, which includes any tool calls made (e.g., write_email, schedule_meeting, check_calendar_availability, done).
+
+You will also see a list of criteria that the assistant's response must meet.
+
+Your job is to evaluate if the assistant's response meets ALL the criteria bullet points provided.
+
+IMPORTANT EVALUATION INSTRUCTIONS:
+1. The assistant's response is formatted as a list of messages.
+2. The response criteria are formatted as bullet points (•)
+3. You must evaluate the response against EACH bullet point individually
+4. ALL bullet points must be met for the response to receive a 'True' grade
+5. For each bullet point, cite specific text from the response that satisfies or fails to satisfy it
+6. Be objective and rigorous in your evaluation
+7. In your justification, clearly indicate which criteria were met and which were not
+8. If ANY criteria are not met, the overall grade must be 'False'
+
+Your output will be used for automated testing, so maintain a consistent evaluation approach.
+```
+This then directs the LLM to look at the messages and check which tool was called and that the response contained the salient features. It is also very specific about how the evaluation is to be carried out, this level of detail is what is needed to ensure consistent test results from the LLM.
+
+Running this we can call:
+```sh
+npx tsx 04_llm.eval.ts
+```
+This should respond to the console with something like:
+```javascript
+{
+  justification: `The assistant's response meets the criteria. It uses the write_email tool to send an email to Alice, acknowledging her question about the missing API endpoints and confirming that the issue will be investigated. The email content states: "Thank you for pointing this out. I'll investigate whether the /auth/refresh and /auth/validate endpoints were intentionally omitted from the API documentation or if an update is needed. I'll review the specs and coordinate with the relevant team, and I’ll get back to you with a clear answer by end of day tomorrow." This directly acknowledges the question and confirms investigation, satisfying the requirement.`,
+  classification: true
+}
+
+```
+#### Running this as a suite
+See [LLM suite](./05_llm.vitest.eval.ts).
+Here we combine everything we just did above with Vitest so it is possible to view the results in the LangSmith. To run this call:
+```sh
+npx vitest run --config ls.vitest.config.ts 05_llm.vitest.eval.ts
+```
