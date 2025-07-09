@@ -1,5 +1,0 @@
-{
-  "graphs": {
-	"deploy": "./assistant.ts:overallWorkflow"
-  }
-}

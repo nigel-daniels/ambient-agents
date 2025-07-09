@@ -17,8 +17,7 @@ export const writeEmail = tool((input: {to: string; subject: string; content: st
 
 // This is our dummy 'scheduling' tool
 export const scheduleMeeting = tool((input: {attendees: array; subject: string; durationMinutes: int; prefferedDay: date; startTime: int}) => {
-	const dateString = input.prefferedDay.toDateString();
-	return `Meeting '${input.subject}' scheduled on ${dateString} at ${input.startTime} for ${input.durationMinutes} minutes with ${input.attendees.length} attendees.`;
+	return `Meeting '${input.subject}' scheduled on ${input.prefferedDay} at ${input.startTime} for ${input.durationMinutes} minutes with ${input.attendees.length} attendees.`;
 }, {
 	name: 'schedule_meeting',
 	description: 'Schedule a calendar meeting.',
@@ -26,7 +25,7 @@ export const scheduleMeeting = tool((input: {attendees: array; subject: string; 
 		attendees: z.array(z.string()).describe('A list of the meeting\'s attendees names.'),
 		subject: z.string().describe('A description of the meetings main purpose.'),
 		durationMinutes: z.number().describe('The number of minutes the meeting will last.'),
-		prefferedDay: z.date().describe('The day the meeting will be held.'),
+		prefferedDay: z.string().date().describe('The day the meeting will be held.'),
 		startTime: z.number().describe('The hour at which the meeting starts.')
 	})
 });

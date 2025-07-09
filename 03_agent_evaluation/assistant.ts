@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { prettyPrint, showGraph, formatEmailMarkdown } from '../shared/utils.ts';
+import { formatEmailMarkdown } from '../shared/utils.ts';
 import { TRIAGE_SYSTEM_PROMPT, DEFAULT_BACKGROUND, DEFAULT_TRIAGE_INSTRUCTIONS,
 	TRIAGE_USER_PROMPT, AGENT_SYSTEM_PROMPT, AGENT_TOOLS_PROMPT,
 	DEFAULT_RESPONSE_PREFERENCES, DEFAULT_CAL_PREFERENCES } from '../shared/prompts.ts';
@@ -74,7 +74,6 @@ async function triageRouter(state: state) {
 	// Build up the command data based on the response
 	switch (result.classification) {
 		case 'respond':
-			console.log('📧 Classification: RESPOND - This email requires a response');
 			goto = 'response_agent';
 			update = {
 				classificationDecision: result.classification,
@@ -85,14 +84,12 @@ async function triageRouter(state: state) {
 			};
 			break;
 		case 'ignore':
-			console.log('🚫 Classification: IGNORE - This email can be safely ignored');
 			goto = END;
 			update = {
 				classificationDecision: result.classification
 			};
 			break;
 		case 'notify':
-			console.log('🔔 Classification: NOTIFY - This email contains important information');
 			// For now we end but this will be update later!
 			goto = END;
 			update = {
@@ -194,44 +191,11 @@ const agent = new StateGraph(state)
 //////////// Assistant ////////////
 // Compose the router and the agent together
 // Note that in JS we need to specify how the router ends
-const emailAssistant = new StateGraph(state)
+// Also we export the assistant this time
+export const emailAssistant = new StateGraph(state)
 	.addNode('triage_router', triageRouter, {
 		ends: ['response_agent', END]
 	})
 	.addNode('response_agent', agent)
 	.addEdge(START, 'triage_router')
 	.compile();
-
-
-
-//////////// Local Tests ////////////
-// Comment these in to run this locally or comment them out to use LangSmith
-showGraph(overallWorkflow, true);
-
-const emailInput1 = {
-	author: 'System Admin <sysadmin@company.com>',
-	to: 'Development Team <dev@company.com>',
-	subject: 'Scheduled maintenance - database downtime',
-	emailThread: 'Hi team,\n\nThis is a reminder that we\'ll be performing scheduled maintenance on the production database tonight from 2AM to 4AM EST. During this time, all database services will be unavailable.\n\nPlease plan your work accordingly and ensure no critical deployments are scheduled during this window.\n\nThanks,\nSystem Admin Team'
-};
-
-const response1 = await emailAssistant.invoke({emailInput: emailInput1});
-
-// Let's view the results (sorry no pretty_print in JS)
-for (const message of response1.messages) {
-	prettyPrint(message);
-}
-
-const emailInput2 = {
-	author: 'Alice Smith <alice.smith@company.com>',
-	to: 'John Doe <john.doe@company.com>',
-	subject: 'Quick question about API documentation',
-	emailThread: 'Hi John,\nI was reviewing the API documentation for the new authentication service and noticed a few endpoints seem to be missing from the specs. Could you help clarify if this was intentional or if we should update the docs?\nSpecifically, I\'m looking at:\n- /auth/refresh\n- /auth/validate\nThanks!\nAlice'
-};
-
-const response2 = await emailAssistant.invoke({emailInput: emailInput2});
-
-// Let's view the results (sorry no pretty_print in JS)
-for (const message of response2.messages) {
-	prettyPrint(message);
-}
