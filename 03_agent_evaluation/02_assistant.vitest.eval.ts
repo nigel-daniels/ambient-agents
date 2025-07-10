@@ -15,7 +15,7 @@ ls.describe('Email assistant: Test Tools', () => {
    		{inputs: {emailInput: EMAIL_INPUTS[0]}, referenceOutputs: { expectedCalls: EXPECTED_TOOL_CALLS[0]}},
    		{inputs: {emailInput: EMAIL_INPUTS[3]}, referenceOutputs: { expectedCalls: EXPECTED_TOOL_CALLS[3]}}
     ])(
-		'For $emailInput expect $expectedCalls',
+		'emailInput, expectedCalls',
 		async ({inputs, referenceOutputs}) => {
 			// Put together our message, make the call and get the results
 			const result = await emailAssistant.invoke({emailInput: inputs.emailInput});
@@ -34,7 +34,7 @@ ls.describe('Email assistant: Test Tools', () => {
 			});
 
 			// Assert we should not be missing any tool calls
-			expect(missingToolCalls.length = 0);
+			expect(missingToolCalls.length).toBe(0);
 		}
 	)
 });

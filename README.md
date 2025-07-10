@@ -1,5 +1,5 @@
 # Building Ambient Agents with LangGraph
-This is all based on the LangChain Academy course [Building Ambient Agents with LangGraph](https://academy.langchain.com/courses/take/ambient-agents/) course. In this repository I have converted all of the examples from Python to JavaScript/TypeScript and I've ensured the notes are all available in markdown. Generally the notes and code are very similar but if there is a key difference I've tried to highlight it.
+This is all based on the LangChain Academy course [Building Ambient Agents with LangGraph](https://academy.langchain.com/courses/take/ambient-agents/) course. In this repository I have converted all of the examples from Python to JavaScript/TypeScript and I've ensured the notes are all available in markdown. Generally the notes and code are very similar but if there is a key difference I've tried to highlight it. I've also endeavored to make the variable names line up but make them JS style, for example Python `email_input` becomes `emailInput` in the code here. I also broke the code into separate files as these were not created in a Jupyter notebook, this lets you run each demo independently in it's own lesson directory. So follow the lesson links, these reflect the notes the course offers and link to the relevant code and config.
 
 ## Lessons
 - [LangGraph 101](./01_LangGraph_101/notes.md)

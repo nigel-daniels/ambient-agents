@@ -216,8 +216,8 @@ This should respond to the console with something like:
 
 ```
 #### Running this as a suite
-See [LLM suite](./05_llm.vitest.eval.ts).
+See [LLM suite](./05_suite.vitest.eval.ts).
 Here we combine everything we just did above with Vitest so it is possible to view the results in the LangSmith. To run this call:
 ```sh
-npx vitest run --config ls.vitest.config.ts 05_llm.vitest.eval.ts
+npx vitest run --config ls.vitest.config.ts 05_suite.vitest.eval.ts
 ```

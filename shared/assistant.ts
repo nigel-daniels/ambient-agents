@@ -192,10 +192,11 @@ const agent = new StateGraph(state)
 // Compose the router and the agent together
 // Note that in JS we need to specify how the router ends
 // Also we export the assistant this time
-export const emailAssistant = new StateGraph(state)
+export const overallWorkflow = new StateGraph(state)
 	.addNode('triage_router', triageRouter, {
 		ends: ['response_agent', END]
 	})
 	.addNode('response_agent', agent)
-	.addEdge(START, 'triage_router')
-	.compile();
+	.addEdge(START, 'triage_router');
+
+export const emailAssistant = overallWorkflow.compile();

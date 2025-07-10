@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { EMAIL_INPUTS, RESPONSE_CRITERIA_LIST } from '../shared/datasets.ts';
 import { formatMessagesString } from '../shared/utils.ts';
 import { RESPONSE_CRITERIA_SYSTEM_PROMPT } from '../shared/eval-prompts.ts';
@@ -13,7 +14,7 @@ const criteriaGrade = z.object({
 	classification: z.boolean().describe('Does the response meet the provided criteria?')
 });
 
-// Now we can define our routing LLM and provide it with our strutured output schema
+// Now we can define our evaluation LLM and provide it with our strutured output schema
 // This should coerce the output to match the schema
 const criteriaEvalStructuredLLM = criteriaEvalLLM.withStructuredOutput(criteriaGrade);
 

@@ -6,7 +6,16 @@ export const STANDARD_EMAIL = {
     author: 'Alice Smith <alice.smith@company.com>',
     to: 'John Doe <john.doe@company.com>',
     subject: 'Quick question about API documentation',
-	emailThread: 'Hi John,\n\nI was reviewing the API documentation for the new authentication service and noticed a few endpoints seem to be missing from the specs. Could you help clarify if this was intentional or if we should update the docs?\n\nSpecifically, I\'m looking at:\n- /auth/refresh\n- /auth/validate\n\nThanks!\nAlice'
+	emailThread: `Hi John,
+
+I was reviewing the API documentation for the new authentication service and noticed a few endpoints seem to be missing from the specs. Could you help clarify if this was intentional or if we should update the docs?
+
+Specifically, I'm looking at:
+- /auth/refresh
+- /auth/validate
+
+Thanks!
+Alice`
 };
 
 // Common notification email
@@ -14,7 +23,14 @@ export const NOTIFICATION_EMAIL = {
     author: 'System Admin <sysadmin@company.com>',
     to: 'Development Team <dev@company.com>',
     subject: 'Scheduled maintenance - database downtime',
-	emailThread: 'Hi team,\n\nThis is a reminder that we\'ll be performing scheduled maintenance on the production database tonight from 2AM to 4AM EST. During this time, all database services will be unavailable.\n\nPlease plan your work accordingly and ensure no critical deployments are scheduled during this window.\n\nThanks,\nSystem Admin Team'
+	emailThread: `Hi team,
+
+This is a reminder that we'll be performing scheduled maintenance on the production database tonight from 2AM to 4AM EST. During this time, all database services will be unavailable.
+
+Please plan your work accordingly and ensure no critical deployments are scheduled during this window.
+
+Thanks,
+System Admin Team`
 };
 
 // Dataset examples, these get exported via a list
@@ -22,112 +38,245 @@ const EMAIL_INPUT_1 = {
     author: 'Alice Smith <alice.smith@company.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'Quick question about API documentation',
-	emailThread: 'Hi Lance,\n\nI was reviewing the API documentation for the new authentication service and noticed a few endpoints seem to be missing from the specs. Could you help clarify if this was intentional or if we should update the docs?\n\nSpecifically, I\'m looking at:\n- /auth/refresh\n- /auth/validate\n\nThanks!\nAlice'
+	emailThread: `Hi Lance,
+
+I was reviewing the API documentation for the new authentication service and noticed a few endpoints seem to be missing from the specs. Could you help clarify if this was intentional or if we should update the docs?
+
+Specifically, I'm looking at:
+- /auth/refresh
+- /auth/validate
+
+Thanks!
+Alice`
 };
 
 const EMAIL_INPUT_2 = {
     author: 'Marketing Team <marketing@company.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'New Company Newsletter Available',
-	emailThread: 'Hello Lance,\n\nThe latest edition of our company newsletter is now available on the intranet. This month features articles on our Q2 results, upcoming team building activities, and employee spotlights.\n\nCheck it out when you have a chance!\n\nBest regards,\nMarketing Team'
+	emailThread: `Hello Lance,
+
+The latest edition of our company newsletter is now available on the intranet. This month features articles on our Q2 results, upcoming team building activities, and employee spotlights.
+
+Check it out when you have a chance!
+
+Best regards,
+Marketing Team`
 };
 
 const EMAIL_INPUT_3 = {
     author: 'System Admin <sysadmin@company.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'Scheduled maintenance - database downtime',
-	emailThread: 'Hi Lance,\n\nThis is a reminder that we\'ll be performing scheduled maintenance on the production database tonight from 2AM to 4AM EST. During this time, all database services will be unavailable.\n\nPlease plan your work accordingly and ensure no critical deployments are scheduled during this window.\n\nThanks,\nSystem Admin Team'
+	emailThread: `Hi Lance,
+
+This is a reminder that we'll be performing scheduled maintenance on the production database tonight from 2AM to 4AM EST. During this time, all database services will be unavailable.
+
+Please plan your work accordingly and ensure no critical deployments are scheduled during this window.
+
+Thanks,
+System Admin Team`
 };
 
 const EMAIL_INPUT_4 = {
     author: 'Project Manager <pm@client.com>',
     to: 'Lance Martin <lance@company.com>',
 	subject: 'Tax season let\'s schedule call',
-	emailThread: 'Lance,\n\nIt\'s tax season again, and I wanted to schedule a call to discuss your tax planning strategies for this year. I have some suggestions that could potentially save you money.\n\nAre you available sometime next week? Tuesday or Thursday afternoon would work best for me, for about 45 minutes.\n\nRegards,\nProject Manager'
+	emailThread: `Lance,
+
+It's tax season again, and I wanted to schedule a call to discuss your tax planning strategies for this year. I have some suggestions that could potentially save you money.
+
+Are you available sometime next week? Tuesday or Thursday afternoon would work best for me, for about 45 minutes.
+
+Regards,
+Project Manager`
 };
 
 const EMAIL_INPUT_5 = {
     author: 'HR Department <hr@company.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'Reminder: Submit your expense reports',
-	emailThread: 'Hello Lance,\n\nThis is a friendly reminder that all expense reports for the previous month need to be submitted by this Friday. Please make sure to include all receipts and proper documentation.\n\nIf you have any questions about the submission process, feel free to reach out to the HR team.\n\nBest regards,\nHR Department'
+	emailThread: `Hello Lance,
+
+This is a friendly reminder that all expense reports for the previous month need to be submitted by this Friday. Please make sure to include all receipts and proper documentation.
+
+If you have any questions about the submission process, feel free to reach out to the HR team.
+
+Best regards,
+HR Department`
 };
 
 const EMAIL_INPUT_6 = {
     author: 'Conference Organizer <events@techconf.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'Do you want to attend this conference?',
-	emailThread: 'Hi Lance,\n\nWe\'re reaching out to invite you to TechConf 2025, happening May 15-17 in San Francisco.\n\nThe conference features keynote speakers from major tech companies, workshops on AI and ML, and great networking opportunities. Early bird registration is available until April 30th.\n\nWould you be interested in attending? We can also arrange for group discounts if other team members want to join.\n\nBest regards,\nConference Organizers'
+	emailThread: `Hi Lance,
+
+We're reaching out to invite you to TechConf 2025, happening May 15-17 in San Francisco.
+
+The conference features keynote speakers from major tech companies, workshops on AI and ML, and great networking opportunities. Early bird registration is available until April 30th.
+
+Would you be interested in attending? We can also arrange for group discounts if other team members want to join.
+
+Best regards,
+Conference Organizers`
 };
 
 const EMAIL_INPUT_7 = {
     author: 'Sarah Johnson <sarah.j@partner.com>',
     to : 'Lance Martin <lance@company.com>',
     subject: 'Can you review these docs before submission?',
-	emailThread: 'Lance,\n\nI\'ve attached the final version of our proposal for the Henderson project. Could you please review the technical specifications section (pages 15-20) before we submit it to the client on Friday?\n\nYour expertise would really help ensure we\'ve covered all the necessary details.\n\nThanks in advance,\nSarah'
+	emailThread: `Lance,
+
+I've attached the final version of our proposal for the Henderson project. Could you please review the technical specifications section (pages 15-20) before we submit it to the client on Friday?
+
+Your expertise would really help ensure we've covered all the necessary details.
+
+Thanks in advance,
+Sarah`
 };
 
 const EMAIL_INPUT_8 = {
     author: 'Community Pool <info@cityrecreation.org>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'Sign up daughter for swimming class',
-	emailThread: 'Dear Lance,\n\nSummer swimming registration is now open! Based on your daughter\'s participation last year, we wanted to let you know that intermediate level classes are available on Mondays and Wednesdays at 4PM or Tuesdays and Thursdays at 5PM.\n\nClasses begin June 1st and run for 8 weeks. Space is limited, so early registration is recommended.\n\nPlease let us know if you\'d like to reserve a spot.\n\nRegards,\nCity Recreation Department'
+	emailThread: `Dear Lance,
+
+Summer swimming registration is now open! Based on your daughter's participation last year, we wanted to let you know that intermediate level classes are available on Mondays and Wednesdays at 4PM or Tuesdays and Thursdays at 5PM.
+
+Classes begin June 1st and run for 8 weeks. Space is limited, so early registration is recommended.
+
+Please let us know if you'd like to reserve a spot.
+
+Regards,
+City Recreation Department`
 };
 
 const EMAIL_INPUT_9 = {
     author: 'GitHub <notifications@github.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'PR #42: Comment from alex-dev',
-	emailThread: 'Hey there!\n\nalex-dev commented on your pull request #42 in langchain-ai/project:\n\n> I\'ve reviewed the changes and everything looks good. Just one small suggestion for the error handling in auth_controller.py. Maybe we should add a timeout parameter to prevent hanging requests?\n\nView the comment: https://github.com/langchain-ai/project/pull/42#comment-12345\n\n---\nYou\'re receiving this because you authored the thread.\nReply to this email directly, or view it on GitHub\n'
+	emailThread: `Hey there!
+
+alex-dev commented on your pull request #42 in langchain-ai/project:
+
+> I've reviewed the changes and everything looks good. Just one small suggestion for the error handling in auth_controller.py. Maybe we should add a timeout parameter to prevent hanging requests?
+
+View the comment: https://github.com/langchain-ai/project/pull/42#comment-12345
+
+---
+You're receiving this because you authored the thread.
+Reply to this email directly, or view it on GitHub
+`
 };
 
 const EMAIL_INPUT_10 = {
     author: 'Team Lead <teamlead@company.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'Quarterly planning meeting',
-	emailThread: 'Hi Lance,\n\nIt\'s time for our quarterly planning session. I\'d like to schedule a 90-minute meeting next week to discuss our roadmap for Q3.\n\nCould you let me know your availability for Monday or Wednesday? Ideally sometime between 10AM and 3PM.\n\nLooking forward to your input on the new feature priorities.\n\nBest,\nTeam Lead'
+	emailThread: `Hi Lance,
+
+It's time for our quarterly planning session. I'd like to schedule a 90-minute meeting next week to discuss our roadmap for Q3.
+
+Could you let me know your availability for Monday or Wednesday? Ideally sometime between 10AM and 3PM.
+
+Looking forward to your input on the new feature priorities.
+
+Best,
+Team Lead`
 };
 
 const EMAIL_INPUT_11 = {
     author: 'AWS Monitoring <no-reply@aws.amazon.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'System admin alert: Instance CPU utilization exceeds threshold',
-	emailThread: 'ALERT: High CPU Utilization\n\nThe following EC2 instance has exceeded the CPU utilization threshold of 90% for more than 15 minutes:\n\nInstance ID: i-0b2d3e4f5a6b7c8d9\nRegion: us-west-2\nCurrent utilization: 95.3%\n\nThis message is automatically generated. Please do not reply.\n'
+	emailThread: `ALERT: High CPU Utilization
+
+The following EC2 instance has exceeded the CPU utilization threshold of 90% for more than 15 minutes:
+
+Instance ID: i-0b2d3e4f5a6b7c8d9
+Region: us-west-2
+Current utilization: 95.3%
+
+This message is automatically generated. Please do not reply.
+`
 };
 
 const EMAIL_INPUT_12 = {
     author: 'Client Success <success@vendor.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'Your subscription will renew automatically',
-	emailThread: 'Hello Lance,\n\nThis is a friendly reminder that your annual subscription to our Developer Pro plan will automatically renew on 04/15/2025.\n\nYour payment method ending in **** 4567 will be charged $1,499.00.\n\nIf you would like to make any changes to your subscription, please visit your account settings or contact our support team before the renewal date.\n\nThank you for your continued business!\n\nClient Success Team'
+	emailThread: `Hello Lance,
+
+This is a friendly reminder that your annual subscription to our Developer Pro plan will automatically renew on 04/15/2025.
+
+Your payment method ending in **** 4567 will be charged $1,499.00.
+
+If you would like to make any changes to your subscription, please visit your account settings or contact our support team before the renewal date.
+
+Thank you for your continued business!
+
+Client Success Team`
 };
 
 const EMAIL_INPUT_13 = {
     author: 'Dr. Roberts <droberts@medical.org>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'Annual checkup reminder',
-	emailThread: 'Hello Lance,\n\nThis is a reminder that it\'s time for your annual checkup. Our records show that your last visit was approximately one year ago.\n\nPlease call our office at (555) 123-4567 to schedule an appointment at your earliest convenience.\n\nBest regards,\nDr. Roberts\' Office'
+	emailThread: `Hello Lance,
+
+This is a reminder that it's time for your annual checkup. Our records show that your last visit was approximately one year ago.
+
+Please call our office at (555) 123-4567 to schedule an appointment at your earliest convenience.
+
+Best regards,
+Dr. Roberts' Office`
 };
 
 const EMAIL_INPUT_14 = {
     author: 'Social Media Platform <notifications@social.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: '5 people liked your post',
-	emailThread: 'Hi Lance,\n\n5 people liked your recent post about "Machine Learning Techniques for NLP"\n\nSee who liked your post and continue the conversation!\n\n[View activity]\n\nTo unsubscribe from these notifications, adjust your settings here.\n'
+	emailThread: `Hi Lance,
+
+5 people liked your recent post about "Machine Learning Techniques for NLP"
+
+See who liked your post and continue the conversation!
+
+[View activity]
+
+To unsubscribe from these notifications, adjust your settings here.
+`
 };
 
 const EMAIL_INPUT_15 = {
     author: 'Project Team <project@company.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'Joint presentation next month',
-	emailThread: 'Hi Lance,\n\nThe leadership team has asked us to prepare a joint presentation on our recent project successes for the all-hands meeting next month.\n\nI\'ve started putting together some slides and would appreciate your input on the technical architecture section. Could we schedule about 60 minutes sometime in the next week to collaborate on this?\n\nI\'m generally free on Tuesdays and Thursdays.\n\nThanks,\nProject Team'
+	emailThread: `Hi Lance,
+
+The leadership team has asked us to prepare a joint presentation on our recent project successes for the all-hands meeting next month.
+
+I've started putting together some slides and would appreciate your input on the technical architecture section. Could we schedule about 60 minutes sometime in the next week to collaborate on this?
+
+I'm generally free on Tuesdays and Thursdays.
+
+Thanks,
+Project Team`
 };
 
 const EMAIL_INPUT_16 = {
     author: 'Marketing Team <marketing@openai.com>',
     to: 'Lance Martin <lance@company.com>',
     subject: 'Newsletter: New Model from OpenAI',
-	emailThread: 'Hi Lance,We\'re excited to announce that we\'ve released a new model from OpenAI!\n\nIt\'s called \'GPT-5\' and it\'s a successor to GPT-4.\n\nIt\'s available now and you can find more information [here](https://openai.com/gpt-5).\n\nThanks,\nMarketing Team'
+	emailThread: `Hi Lance,We're excited to announce that we've released a new model from OpenAI!
+
+It's called 'GPT-5' and it's a successor to GPT-4.
+
+It's available now and you can find more information [here](https://openai.com/gpt-5).
+
+Thanks,
+Marketing Team`
 };
 
 //////////// TRIAGE ////////////
