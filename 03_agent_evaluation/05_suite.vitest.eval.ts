@@ -11,13 +11,13 @@ import * as ls from 'langsmith/vitest';
 import { expect } from 'vitest';
 
 // Set globals
-let AGENT_MODULE = '';
+const AGENT_MODULE = 'email_assistant';
 
 //////////// LLM setup ////////////
 // Define the response schema
 const criteriaGrade = z.object({
 	justification: z.string().describe('The justification for the grade and score, including specific examples from the response.'),
-	classification: z.boolean().describe('Does the response meet the provided criteria?')
+	grade: z.boolean().describe('Does the response meet the provided criteria?')
 });
 
 // Now we can define our evaluation LLM and provide it with our strutured output schema
@@ -29,35 +29,35 @@ const criteriaEvalStructuredLLM = criteriaEvalLLM.withStructuredOutput(criteriaG
 // Build up the test inputs and the expected response criteria
 // expected calls and set the test email names
 /*const testData = EMAIL_INPUTS.map((emailInput, index) => ({
-	inputs: {emailInput: emailInput },
+	inputs: {
+		emailName: EMAIL_NAMES[index],
+		emailInput: emailInput
+	},
 	referenceOutputs: {
 		criteria: RESPONSE_CRITERIA_LIST[index],
 		expectedCalls: EXPECTED_TOOL_CALLS[index]
-	},
-	config: {
-		name: 'Agent Evaluation',
-		metadata: {
-			emailName: EMAIL_NAMES[index]
-		}
 	}
 }));*/
 
 const testData = [{
-	inputs: {emailInput: {
-	    author: 'Alice Smith <alice.smith@company.com>',
-	    to: 'Lance Martin <lance@company.com>',
-	    subject: 'Quick question about API documentation',
-		emailThread: `Hi Lance,
+	inputs: {
+		emailName: 'email_input_1',
+		emailInput: {
+		    author: 'Alice Smith <alice.smith@company.com>',
+		    to: 'Lance Martin <lance@company.com>',
+		    subject: 'Quick question about API documentation',
+			emailThread: `Hi Lance,
 
-	I was reviewing the API documentation for the new authentication service and noticed a few endpoints seem to be missing from the specs. Could you help clarify if this was intentional or if we should update the docs?
+		I was reviewing the API documentation for the new authentication service and noticed a few endpoints seem to be missing from the specs. Could you help clarify if this was intentional or if we should update the docs?
 
-	Specifically, I'm looking at:
-	- /auth/refresh
-	- /auth/validate
+		Specifically, I'm looking at:
+		- /auth/refresh
+		- /auth/validate
 
-	Thanks!
-	Alice`
-	} },
+		Thanks!
+		Alice`
+		}
+	},
 	referenceOutputs: {
 		criteria: '• Send email with write_email tool call to acknowledge the question and confirm it will be investigated',
 		expectedCalls: ['write_email', 'done']
@@ -72,13 +72,14 @@ const testData = [{
 
 //////////// Test cases ////////////
 // Test if email processing contains expected tool calls.
-/*
-ls.describe('Test email dataset tool calls', () => {
+ls.describe('Test tool calls made', () => {
 	ls.test.each(
 		testData
 	)(
 		'emailInput, criteria, expectedCalls',
+		{config: {project_name: AGENT_MODULE}},
 		async ({inputs, referenceOutputs}) => {
+			console.log('Processing ' + inputs.emailName);
 			// Use this helper to set things up
 			const {emailAssistant, threadConfig ,store} = setupAssistant();
 
@@ -117,12 +118,12 @@ ls.describe('Test email dataset tool calls', () => {
 			expect(missingCalls.length).toBe(0);
 		}
 	)
-}); */
+});
 
 
 // Test if a response meets the specified criteria.
 // Only runs on emails that require a response.
-ls.describe('Test response criteria evaluation', () => {
+ls.describe('Test response v criteria', () => {
 	ls.test.each(
 		testData
 	)(

@@ -221,3 +221,8 @@ Here we combine everything we just did above with Vitest so it is possible to vi
 ```sh
 npx vitest run --config ls.vitest.config.ts 05_suite.vitest.eval.ts
 ```
+##### View results
+See [results](./06_results.ts).
+This simple bit of code uses the LangSmith client to extract data on an experiment that you have run. You will need to replace the `EXPERIMENT_NAME` used with your own.
+![Langsmith experiment](./images/langsmith-experiment.png) 
+After you have finished a test run you can follow the provided link and find the experiment name. This is indicated by the dashed ellipse in the image above.
