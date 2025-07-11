@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { formatEmailMarkdown, formatForDisplay, showGraph } from '../shared/utils.ts';
 import { TRIAGE_SYSTEM_PROMPT, DEFAULT_BACKGROUND, DEFAULT_TRIAGE_INSTRUCTIONS,
-	TRIAGE_USER_PROMPT, AGENT_SYSTEM_PROMPT, HITL_TOOLS_PROMPT,
+	TRIAGE_USER_PROMPT, AGENT_SYSTEM_PROMPT_HITL, HITL_TOOLS_PROMPT,
 	DEFAULT_RESPONSE_PREFERENCES, DEFAULT_CAL_PREFERENCES } from '../shared/prompts.ts';
 import { writeEmail, scheduleMeeting, checkCalendarAvailability, done, question } from '../shared/tools.ts';
 import format from 'string-template';
@@ -186,12 +186,12 @@ const toolsByName = tools.reduce((acc, tool) => {
 
 
 // Now we set up a new LLM this one with the tools and no response schema
-const llmWithTools = llmAgent.bindTools(tools, {tool_choice: 'any'});
+const llmWithTools = llmAgent.bindTools(tools, {tool_choice: 'required'});
 
 
 // LLM Node
 async function llmCall(state: state) {
-	const systemPrompt = format(AGENT_SYSTEM_PROMPT, {
+	const systemPrompt = format(AGENT_SYSTEM_PROMPT_HITL, {
 		toolsPrompt: HITL_TOOLS_PROMPT,						// HITL Note, updated to include the question tool
 		date: new Date().toISOString().split('T')[0],
 		background: DEFAULT_BACKGROUND,
@@ -299,7 +299,7 @@ async function interruptHandler(state:state) {
 						// Get the new args
 						const editedArgs = response.args.args;
 						// Now let's update the AI tool call message with the new args
-						const aiMessage = state.messages(state.messages.length-1);
+						const aiMessage = state.messages[state.messages.length-1];
 
 						// Create a new tool list by filtering out the tool being edited
 						// then add the updated version, this avoids editing the origional list

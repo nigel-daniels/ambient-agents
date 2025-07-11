@@ -73,6 +73,7 @@ These can be created in Langsmith and run against the assistant using the LangSm
 * These work well with evaluators that can be applied to every test case (similarity, match accuracy, etc.).
 ## Test Cases
 See [datasets](../shared/datasets.ts).
+
 To start we need to define our tests, some emails to test with along with some things to test. In our case we have the following:
 1. **Input e-mails:** A collection of test e-mails.
 2. **Ground truth classifications:** `[respond, notify, ignore]`
@@ -90,6 +91,7 @@ npx tsx 01_datasets.test.ts
 
 ### Vitest tests
 See [unit tests](./02_assistant.vitest.eval.ts).
+
 These tests are stored in the file `assistant.vitest.eval.ts` to let us know we are testing `assistant.ts` using Vitest evaluations. To run the test use:
 ```sh
 npx vitest run --config ls.vitest.config.ts 02_assistant.vitest.eval.ts
@@ -153,6 +155,7 @@ Overall this allows us to define the input data, expected output, the function c
 
 ### LLM-as-Judge evaluation
 See [test LLM evaluation](./04_llm.eval.ts).
+
 Here we will see how we can use an LLM to decide if our agent executed well against some success criteria. This is based around predefining a description of the expected output, this is particularly important when evaluating responses. For example, for this `emailInput`:
 ```javascript
 {
@@ -217,12 +220,14 @@ This should respond to the console with something like:
 ```
 #### Running this as a suite
 See [LLM suite](./05_suite.vitest.eval.ts).
+
 Here we combine everything we just did above with Vitest so it is possible to view the results in the LangSmith. To run this call:
 ```sh
 npx vitest run --config ls.vitest.config.ts 05_suite.vitest.eval.ts
 ```
 ##### View results
 See [results](./06_results.ts).
+
 This simple bit of code uses the LangSmith client to extract data on an experiment that you have run. You will need to replace the `EXPERIMENT_NAME` used with your own.
-![Langsmith experiment](./images/langsmith-experiment.png) 
+![Langsmith experiment](./images/langsmith-experiment.png)
 After you have finished a test run you can follow the provided link and find the experiment name. This is indicated by the dashed ellipse in the image above.

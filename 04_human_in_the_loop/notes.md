@@ -138,4 +138,66 @@ See [review and accept](./01_review_accept.ts).
 This is relatively straight forward, we stream the response from the graph until we hit the interrupt (we examine it), then we use a Command to accept both the tool call results.
 
 ### Review and edit
-See [review and edit](./02_review_edit.ts)
+See [review and edit](./02_review_edit.ts).
+
+This shows how the user can take control of the details of agent actions while letting the system take care of making the actions itself.  In this example instead of accepting the tool calls (See previous example), they decide to make changes. This results in the following.
+#### schedule_meeting
+1. The meeting schedule is proposed in the Action Request.
+2. The user decides to change the parameters:
+   * The date is changed and duration is set to 30 mins (instead of the proposed 40 mins).
+   * Everything else is the same.
+3. The response type is set to `edit` and the new args are included.
+4. The interrupt handler updates the tool call.
+5. The tool is executed with the new args.
+#### write_email
+1. The agent proposes an email that includes the new 30 min time slot.
+2. The use decides to update the email:
+   * They rewrite it to be a lot shorter and less formal.
+   * They correct the meeting date, the agent has the wrong date!
+   * They request confirmation of the meeting.
+3. The response type is set to `edit` and the new email content is included.
+4. The interrupt handler updates the tool call.
+5. The tool is executed with the new args.
+
+### Review and respond
+See [review and respond](./03_review_respond.ts).
+
+Here the user doesn't make the changes directly to the tool but provides the agent feedback on the proposed action and lets the agent itself rework the proposed action, this loop can continue until the user decides to take a different action, such as `accept`. In this example, again using the same e-mail, the following happens:
+
+1. The agent proposes a meeting schedule.
+2. The user decides to `respond` asking:
+   * for a 30 minute meeting.
+   * for something after 2pm.
+3. The agent proposes a revised schedule.
+4. The user decides to `accept`.
+5. An e-mail draft is proposed.
+6. The user provides a `respond` asking:
+   * A shorter less formal e-mail.
+   * A specific close statement.
+7. The agent provides a new e-mail draft.
+8. The user decides to `accept`.
+
+In this case the agent was responsible for making all of the tool call changes and executing the tools and the user just provided feedback. This is very effective when:
+* Changing the style of content and it's tone.
+* Adding new context or context the agent missed.
+* Redirecting the approach the agent took.
+* Answering a question that shapes future steps.
+
+### Interrupt tool
+See [question tool](./04_question_tool.ts).
+
+This example demonstrates using an interrupt with a tool. In this case we start with a simple email asking the user about brunch.
+
+1. Due to the question the email poses the agent calls the `question` tool.
+2. The user decides to `respond` to the `question`:
+   * They respond with their preferred cuisine.
+3. Now with this additional information the agent shows a draft email.
+4. The user decides to `accept` the draft.
+
+This shows how an agent can use question responses to:
+* let the agent gain further information.
+* get direct answers as well as additional context.
+* integrate the information into following actions.
+* collaborate with humans to improve outcomes.
+
+## Deploy

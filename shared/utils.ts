@@ -121,8 +121,8 @@ export function formatForDisplay(toolCall){
 
 			**Meeting**: ${toolCall.args.subject}
 			**Attendees**: ${toolCall.args.attendees.join(', ')}
-			**Duration**: ${toolCall.args.duration_minutes} minutes
-			**Day**: ${toolCall.args.preferred_day}
+			**Duration**: ${toolCall.args.durationMinutes} minutes
+			**Day**: ${toolCall.args.preferredDay}
 			`;
 			break;
 		case 'question':
@@ -132,7 +132,7 @@ export function formatForDisplay(toolCall){
 			${toolCall.args.content}
 			`;
 		default:
-			display += `# Tool Call: ${tool_call.name}
+			display += `# Tool Call: ${toolCall.name}
 
 			Arguments:
 			${JSON.stringify(toolCall.args, null, 2)}

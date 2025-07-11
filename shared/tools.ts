@@ -27,7 +27,7 @@ export const scheduleMeeting = tool((input: {attendees: array; subject: string; 
 		attendees: z.array(z.string()).describe('A list of the meeting\'s attendees names.'),
 		subject: z.string().describe('A description of the meetings main purpose.'),
 		durationMinutes: z.number().describe('The number of minutes the meeting will last.'),
-		prefferedDay: z.string().date().describe('The day the meeting will be held.'),
+		preferredDay: z.string().date().describe('The day the meeting will be held.'),
 		startTime: z.number().describe('The hour at which the meeting starts.')
 	})
 });

@@ -39,9 +39,12 @@ ________________________________________    ____________________________________
                                                 so use an Agent 	 
 ```
 See [assistant](./assistant.ts).
+
 This is a schematic of what we are aiming to build and the key components we need to use. The router is relatively static in function, whereas the agent is more open-ended and may need to use one or more tools to complete it's task.
 ### Tools
-See [tools](../shared/tools.ts). This is the collection of dummy tools we will be using in the assistant, you can see there are tools to send an email, check a calendar, schedule a meeting, and a tool to say we are done.
+See [tools](../shared/tools.ts).
+
+This is the collection of dummy tools we will be using in the assistant, you can see there are tools to send an email, check a calendar, schedule a meeting, and a tool to say we are done.
 NB: `question` is for later use in *Human in the Loop*.
 ### Router
 The router will triage the incoming e-mail.

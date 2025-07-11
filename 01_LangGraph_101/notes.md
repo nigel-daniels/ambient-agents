@@ -150,6 +150,7 @@ The persistence layer in LangGraph is built on checkpoints, these happen after e
 
 ### Interrupts
 See [interrupts](./06_interrupts.ts) (note that the resume is commented out for the first run).
+
 We can also use interrupts to stop execution of a graph at specific points, often to collect user input, then to continue execution taking into account the users input.
 
 ## Tracing
