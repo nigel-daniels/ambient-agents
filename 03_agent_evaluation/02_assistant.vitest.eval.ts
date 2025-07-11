@@ -1,6 +1,6 @@
 import { EMAIL_INPUTS, EXPECTED_TOOL_CALLS, TRIAGE_OUTPUTS_LIST, RESPONSE_CRITERIA_LIST } from '../shared/datasets.ts';
 import { formatMessagesString, extractToolCalls } from '../shared/utils.ts';
-import { emailAssistant } from '../shared/assistant.ts';
+import { emailAssistant } from './assistant.ts';
 import * as ls from 'langsmith/vitest';
 import { expect } from 'vitest';
 

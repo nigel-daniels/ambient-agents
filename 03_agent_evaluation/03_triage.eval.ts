@@ -1,6 +1,6 @@
 import { EXAMPLES_TRIAGE } from '../shared/datasets.ts';
 import { Client, evaluate } from 'langsmith';
-import { emailAssistant } from '../shared/assistant.ts';
+import { emailAssistant } from './assistant.ts';
 import { evaluate } from "langsmith/evaluation";
 
 // Initialise the LangSmith client

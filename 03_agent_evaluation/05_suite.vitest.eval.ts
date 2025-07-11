@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { EMAIL_INPUTS, RESPONSE_CRITERIA_LIST, EMAIL_NAMES, EXPECTED_TOOL_CALLS } from '../shared/datasets.ts';
 import { formatMessagesString, extractToolCalls } from '../shared/utils.ts';
 import { RESPONSE_CRITERIA_SYSTEM_PROMPT } from '../shared/eval-prompts.ts';
-import { overallWorkflow } from '../shared/assistant.ts';
+import { overallWorkflow } from './assistant.ts';
 import { ChatOpenAI } from '@langchain/openai';
 import { InMemoryStore, MemorySaver } from '@langchain/langgraph';
 import { z } from 'zod';
@@ -28,7 +28,7 @@ const criteriaEvalStructuredLLM = criteriaEvalLLM.withStructuredOutput(criteriaG
 //////////// Test data setup ////////////
 // Build up the test inputs and the expected response criteria
 // expected calls and set the test email names
-/*const testData = EMAIL_INPUTS.map((emailInput, index) => ({
+const testData = EMAIL_INPUTS.map((emailInput, index) => ({
 	inputs: {
 		emailName: EMAIL_NAMES[index],
 		emailInput: emailInput
@@ -37,8 +37,11 @@ const criteriaEvalStructuredLLM = criteriaEvalLLM.withStructuredOutput(criteriaG
 		criteria: RESPONSE_CRITERIA_LIST[index],
 		expectedCalls: EXPECTED_TOOL_CALLS[index]
 	}
-}));*/
+}));
 
+/*
+// Single test case, useful for debugging
+// and checking the data structure
 const testData = [{
 	inputs: {
 		emailName: 'email_input_1',
@@ -69,6 +72,8 @@ const testData = [{
 		}
 	}
 }];
+*/
+
 
 //////////// Test cases ////////////
 // Test if email processing contains expected tool calls.
@@ -77,7 +82,6 @@ ls.describe('Test tool calls made', () => {
 		testData
 	)(
 		'emailInput, criteria, expectedCalls',
-		{config: {project_name: AGENT_MODULE}},
 		async ({inputs, referenceOutputs}) => {
 			console.log('Processing ' + inputs.emailName);
 			// Use this helper to set things up
@@ -129,6 +133,7 @@ ls.describe('Test response v criteria', () => {
 	)(
 		'emailInput, criteria, expectedCalls',
 		async ({inputs, referenceOutputs}) => {
+			console.log('Processing ' + inputs.emailName);
 			// Use this helper to set things up
 			const {emailAssistant, threadConfig ,store} = setupAssistant();
 

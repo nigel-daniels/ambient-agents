@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { EMAIL_INPUTS, RESPONSE_CRITERIA_LIST } from '../shared/datasets.ts';
 import { formatMessagesString } from '../shared/utils.ts';
 import { RESPONSE_CRITERIA_SYSTEM_PROMPT } from '../shared/eval-prompts.ts';
-import { emailAssistant } from '../shared/assistant.ts';
+import { emailAssistant } from './assistant.ts';
 import { ChatOpenAI } from '@langchain/openai';
 import { z } from 'zod';
 

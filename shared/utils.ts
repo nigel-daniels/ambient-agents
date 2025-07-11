@@ -101,3 +101,44 @@ function messageFormat(message) {
 
 	return result;
 };
+
+// Formats a tool call for display using markdown
+export function formatForDisplay(toolCall){
+	let display = '';
+
+	switch (toolCall.name) {
+		case 'write_email':
+			display += `# Email Draft
+
+			**To**: ${toolCall.args.to}
+			**Subject**: ${toolCall.args.subject}
+
+			${toolCall.args.content}
+			`;
+			break;
+		case 'schedule_meeting':
+			display += `# Calendar Invite
+
+			**Meeting**: ${toolCall.args.subject}
+			**Attendees**: ${toolCall.args.attendees.join(', ')}
+			**Duration**: ${toolCall.args.duration_minutes} minutes
+			**Day**: ${toolCall.args.preferred_day}
+			`;
+			break;
+		case 'question':
+			//Special formatting for questions to make them clear
+			display += `# Question for User
+
+			${toolCall.args.content}
+			`;
+		default:
+			display += `# Tool Call: ${tool_call.name}
+
+			Arguments:
+			${JSON.stringify(toolCall.args, null, 2)}
+			`;
+			break;
+	}
+
+	return display;
+}
