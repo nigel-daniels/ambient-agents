@@ -93,18 +93,18 @@ This is the heart of our HITL process in the agent, it will examine tool calls a
 
 So for each of our tools that the HITL needs to deal with we can build the following table:
 
-| Tool Selected | Response | Notes | Outcomes |   |
+| Tool Selected | Response | Notes | Outcome | Finish ?  |
 |:--------------|:-------|:------|:---------|:--|
-|`question`|`ignore`|Ignore tool call|END||
+|`question`|`ignore`|Ignore tool call||END|
 ||`respond`|Give agent an answer to the question|Answer Message||
-|`write_email`|`ignore`|Ignore tool call|END|||
+|`write_email`|`ignore`|Ignore tool call||END|
 ||`respond`|Provide feedback on how to write the email|Feedback Message||
 ||`accept`|Accept the tool call|Invoke Tool|Done|
 ||`edit`|Edit the tool call|Invoke Tool (edited args)|Done|
-| `schedule_meeting`|`ignore`|Ignore tool call|END||
+| `schedule_meeting`|`ignore`|Ignore tool call||END|
 ||`respond`|Provide agent feed back on the schedule to try again|Feedback Message||
-||`accept`|Accept the tool call|Invoke Tool|Done|
-||`edit`|Edit the tool call|Invoke Tool (edited args)|Done|
+||`accept`|Accept the tool call|Invoke Tool||
+||`edit`|Edit the tool call|Invoke Tool (edited args)||
 
 ### HITL patterns review
 See the updated [assistant](./assistant.ts).
@@ -122,6 +122,11 @@ See the updated [assistant](./assistant.ts).
 **Question**: Ask the user for further information:
 * *User decision, Control flow*: ignore and end, respond with answer.
 
+![Graph](./images/graph.png)
+If you uncomment the last line to the `showGraph` function this will generate an image like the above in the `shared` directory. Generating this on the command line results in an unreadable result. To do this jun the graph with the line uncommented using:
+```sh
+npx tsx assistant.ts
+```
 ## Calling Interrupts
 When we hit the interrupt the graph is paused before the tool call takes place. You can see the tool name in the `action` property and the `args` to accompany it. To handle the interrupt we use the `Command` interface. So far we have used it to:
 * `goto`: route to the next node.
@@ -159,6 +164,7 @@ This shows how the user can take control of the details of agent actions while l
 4. The interrupt handler updates the tool call.
 5. The tool is executed with the new args.
 
+When reviewing the messages it is important to note that our changes are reflected in the tool call. It's important that this is the case as if we did not update the tool call what we would see in messages would be a tool call requesting the initial request and a tool result reflecting the new request, these would not be consistent and could confuse the agent later on. By updating the call and the result we ensure a consistent sequence.
 ### Review and respond
 See [review and respond](./03_review_respond.ts).
 
@@ -201,3 +207,8 @@ This shows how an agent can use question responses to:
 * collaborate with humans to improve outcomes.
 
 ## Deploy
+
+There is a `langgraph.json` file set up to run our `emailAsssitant` locally. We can start this by running:
+```sh
+npx @langchain/langgraph-cli dev
+```

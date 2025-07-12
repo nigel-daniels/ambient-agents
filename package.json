@@ -10,20 +10,20 @@
   "license": "UNLICENSED",
   "description": "",
   "dependencies": {
-    "@langchain/langgraph": "^0.3.6",
-    "@langchain/langgraph-cli": "^0.0.41",
-    "@langchain/openai": "^0.5.16",
+    "@langchain/langgraph": "^0.3.7",
+    "@langchain/langgraph-cli": "^0.0.45",
+    "@langchain/openai": "^0.5.18",
     "marked": "^15.0.12",
     "marked-terminal": "^7.3.0",
     "string-template": "^1.0.0",
     "terminal-image": "^3.1.1",
     "tsx": "^4.20.3",
     "uuid": "^11.1.0",
-    "zod": "^3.25.67"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "dotenv": "^17.1.0",
-    "langsmith": "^0.3.40",
+    "dotenv": "^17.2.0",
+    "langsmith": "^0.3.43",
     "vitest": "^3.2.4"
   }
 }

@@ -131,3 +131,6 @@ dist
 
 // Scratchpad code
 test.ts
+
+# LangGraph API
+.langgraph_api

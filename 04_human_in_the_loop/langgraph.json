@@ -1,0 +1,5 @@
+{
+  "graphs": {
+	"hitl_assistant": "./assistant.ts:emailAssistant"
+  }
+}
