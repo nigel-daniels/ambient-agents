@@ -62,6 +62,22 @@ The store implementations vary with the deployment:
 
 A guide to adding semantic search to memory can be found [here](https://langchain-ai.github.io/langgraphjs/how-tos/semantic-search/).
 
+See [memory store example](./01_memory_example.ts).
+This brief code example show how we can use the `InMemoryStore`. If we wanted to use this to store across threads in a graph we would do something like:
+```javascript
+import { MemorySaver, InMemoryStore } from '@langchain/langgraph';
+
+// We need this to store the thread conversations
+const checkpoint = new MemorySaver();
+
+// This is required to store those conversations across different threads
+const inMemoryStore = new InMemoryStore();
+
+...
+
+// Now we can compile a graph with thread-scoped and cross-thread memories
+const compiledGraph = graph.compile({checkpointer: checkpoint, store: inMemoryStore});
+```
 ## Adding memory to the assistant
 ```
                       Triage Router
@@ -95,3 +111,20 @@ In the triage router the memory is available to the LLM to provide past feedback
 ||`edit`|Edit the tool call|Invoke Tool (edited args)|Y||
 
 In the table above there is no a *Store ?* column that indicates that any time we learn something from the use or something about their preferences we want to store that information for future use. This is when they decide we should `ignore` an e-mail, they `edit` a tool call or provide a `response`. The only time we don't record a response is when the agent explicitly asks a question.
+
+### Managing memories
+See [memory assistant](./assitant.ts).
+
+We know we need to add a `Store` to the graph but we need to consider:
+1. How we structure it?
+2. How we update it?
+
+**Structure**: Here we record simple strings (there are some default preferences to get us started in the [prompts file](../shared/prompts.ts)), so we have a function, `getMemoryStore`,that fetches memories from the store or updates them with a what is passed in (initially the default preferences q.v.).
+
+**Updates**: Some features of the [GPT prompt guide](https://cookbook.openai.com/examples/gpt4-1_prompting_guide) were used to develop the prompts. You may need to review your own LLM providers advice and update these. The GPT 4.1 guide suggested:
+* Repeat the key instruction at the start and end of the prompt.
+* Write clear, explicit instructions.
+* Use XML to delimit.
+* Provide examples.
+
+The update prompt (`MEMORY_UPDATE_INSTRUCTIONS`) is also in the shared prompts file, as is a reinforcing prompt (`MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT`). The updating takes place via the function `updateMemory` and we use the `userPreferences` schema

@@ -8,7 +8,7 @@ import format from 'string-template';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { StateGraph, MessagesAnnotation, Annotation, START, END, Command, interrupt } from '@langchain/langgraph';
+import { StateGraph, MessagesAnnotation, BaseStore, Annotation, START, END, Command, interrupt } from '@langchain/langgraph';
 
 // Let's set up a models that can do something for us
 const llmNode = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});
@@ -26,6 +26,33 @@ const state = Annotation.Root({
 		default: () => {'ignore'}
 	})
 });
+
+
+///////////// Memory store /////////////
+const userPreferences = z.object({
+	chainOfThought: z.string().describe('Reasoning about which user preferences need to add / update if required'),
+	
+});
+
+// Accepts a BaseStore, and namespace ('email_assistant', 'triage_preferences')
+// and optionally default content to return, it returns the memory requested or the default
+function getMemoryStore(store, namespace, defaultContent = null) {
+	let memory = null;
+	// Check for an existing memory based on namespce and key
+	let userPreferences = store.get(namespace, 'user_preferences');
+
+	if (userPreferences) {
+		// If we got a memory get it's content
+		memory = userPreferences.value;
+	} else {
+		// otherwise store the new memory and get that
+		store.put(namespace, 'user_preferences', defaultContent);
+		memory = defaultContent;
+	}
+	// return the memory we found or got
+	return memory;
+}
+
 
 //////////// Structured response ////////////
 
@@ -107,7 +134,7 @@ async function triageRouter(state: state) {
 	});
 }
 
-// HITL Note this is the new triage_interrupt_handler node
+
 // A node to handle interrupts from the triage step
 async function triageInterruptHandler(state: state) {
 	// destructure the email input and format to markdown
@@ -177,7 +204,6 @@ async function triageInterruptHandler(state: state) {
 // NB we could have used the createReactAgent for this, but this breaks it down for us.
 
 // First let's set up the tools lists,
-// HITL Note we are adding question to the tool roster!
 const tools = [writeEmail, scheduleMeeting, checkCalendarAvailability, question, done];
 const toolsByName = tools.reduce((acc, tool) => {
   acc[tool.name] = tool;
@@ -192,7 +218,7 @@ const llmWithTools = llmAgent.bindTools(tools, {tool_choice: 'required'});
 // LLM Node
 async function llmCall(state: state) {
 	const systemPrompt = format(AGENT_SYSTEM_PROMPT_HITL, {
-		toolsPrompt: HITL_TOOLS_PROMPT,						// HITL Note, updated to include the question tool
+		toolsPrompt: HITL_TOOLS_PROMPT,
 		date: new Date().toISOString().split('T')[0],
 		background: DEFAULT_BACKGROUND,
 		responsePreferences: DEFAULT_RESPONSE_PREFERENCES,
@@ -209,9 +235,8 @@ async function llmCall(state: state) {
 	return {messages: result};
 }
 
-// HITL Note we no longer use the toolHandler
 
-// HITL Node creates an interrupt for human review of tool calls
+// Handle the response based on type for different tools
 async function interruptHandler(state:state) {
 	// Store the messages
 	const result =[];
@@ -403,7 +428,7 @@ async function shouldContinue(state: state) {
 			if (toolCall.name == 'Done') {
 				result = END;
 			} else {
-				result = 'interrupt_handler'; // HITL Note update from the tool handler
+				result = 'interrupt_handler';
 			}
 		}
 	}
@@ -415,11 +440,11 @@ async function shouldContinue(state: state) {
 // Note we drop the llmCall -> toolHandler edge
 export const agent = new StateGraph(state)
 	.addNode('llm_call', llmCall)
-	.addNode('interrupt_handler', interruptHandler, { // HITL Note now we use the interrupt handler
+	.addNode('interrupt_handler', interruptHandler, {
 		ends: ['llm_call', END]
 	})
 	.addEdge(START, 'llm_call')
-	.addConditionalEdges('llm_call', shouldContinue, {'interrupt_handler': 'interrupt_handler', '__end__': END}) // HITL Note here we now reference the interrupt handler
+	.addConditionalEdges('llm_call', shouldContinue, {'interrupt_handler': 'interrupt_handler', '__end__': END})
 	.compile();
 
 //////////// Assistant ////////////
@@ -427,10 +452,10 @@ export const agent = new StateGraph(state)
 // Note that in JS we need to specify how the router ends
 // Also we export the assistant this time
 export const overallWorkflow = new StateGraph(state)
-	.addNode('triage_router', triageRouter, { // HITL Note we can now route to the triageInterruptHandler
+	.addNode('triage_router', triageRouter, {
 		ends: ['response_agent', 'triage_interrupt_handler', END]
 	})
-	.addNode('triage_interrupt_handler', triageInterruptHandler, { // HITL Note here is the new node
+	.addNode('triage_interrupt_handler', triageInterruptHandler, {
 		ends: ['response_agent', END]
 	})
 	.addNode('response_agent', agent)
