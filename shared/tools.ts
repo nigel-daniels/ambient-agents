@@ -18,8 +18,8 @@ export const writeEmail = tool((input: {to: string; subject: string; content: st
 
 
 // This is our dummy 'scheduling' tool
-export const scheduleMeeting = tool((input: {attendees: array; subject: string; durationMinutes: int; prefferedDay: date; startTime: int}) => {
-	return `Meeting '${input.subject}' scheduled on ${input.prefferedDay} at ${input.startTime} for ${input.durationMinutes} minutes with ${input.attendees.length} attendees.`;
+export const scheduleMeeting = tool((input: {attendees: array; subject: string; durationMinutes: int; preferredDay: date; startTime: int}) => {
+	return `Meeting '${input.subject}' scheduled on ${input.preferredDay} at ${input.startTime} for ${input.durationMinutes} minutes with ${input.attendees.length} attendees.`;
 }, {
 	name: 'schedule_meeting',
 	description: 'Schedule a calendar meeting.',

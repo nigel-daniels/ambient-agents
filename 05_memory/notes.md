@@ -119,7 +119,7 @@ We know we need to add a `Store` to the graph but we need to consider:
 1. How we structure it?
 2. How we update it?
 
-**Structure**: Here we record simple strings (there are some default preferences to get us started in the [prompts file](../shared/prompts.ts)), so we have a function, `getMemoryStore`,that fetches memories from the store or updates them with a what is passed in (initially the default preferences q.v.).
+**Structure**: Here we record simple strings and this is defined in the [schemas](../shared/schemas.ts) file (there are some default preferences to get us started in the [prompts file](../shared/prompts.ts)). Un the assistant there is a helper function, `getMemory`, that fetches memories from the store or updates them with a what is passed in (initially the default preferences q.v.).
 
 **Updates**: Some features of the [GPT prompt guide](https://cookbook.openai.com/examples/gpt4-1_prompting_guide) were used to develop the prompts. You may need to review your own LLM providers advice and update these. The GPT 4.1 guide suggested:
 * Repeat the key instruction at the start and end of the prompt.
@@ -127,4 +127,96 @@ We know we need to add a `Store` to the graph but we need to consider:
 * Use XML to delimit.
 * Provide examples.
 
-The update prompt (`MEMORY_UPDATE_INSTRUCTIONS`) is also in the shared prompts file, as is a reinforcing prompt (`MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT`). The updating takes place via the function `updateMemory` and we use the `userPreferences` schema
+The update prompt (`MEMORY_UPDATE_INSTRUCTIONS`) is also in the shared prompts file, as is a reinforcing prompt (`MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT`). The updating takes place via the function `updateMemory` and we use the `userPreferences` schema.
+
+Note that in JS the store is not passed directly to the nodes but a `LangGraphRunnableConfig` is. It is from this we then extract the store.
+
+## Testing the agent memory
+We can use different user interactions to test the formation of memories (updates to preferences) to improve the systems performance. The key items to evaluate are:
+1. How do we capture and store preferences?
+2. How do the preferences affect future decisions?
+3. Which interactions create which types of memory?
+
+See [utilities](../shared/utils.ts).
+
+To assist with this we create the `displayMemoryContent` function for reviewing the memories as they are developed.
+
+### Accepting the tool calls
+See [accepting tool calls](./02_accept_memory.ts).
+
+In this test we don't make any modifications (i.e. there is no feedback) so the memory should remain the same. What happens is:
+1. We use the tax planning e-mail used before.
+2. The agent triages it as a `respond` e-mail.
+3. We `accept` the proposed schedule.
+4. An e-mail response is generated.
+5. We `accept` the proposed e-mail.
+
+Running this we output the state of the memories in the store prior to us accepting the tool calls and after. This shows how the system is initialized with the defaults and, as we gave no feedback, the remain unchanged.
+
+### Edit the tool calls
+See [editing tool calls](./03_edit_memory.ts).
+
+In this exercise we are changing the tool calls so the system should learn from the changes we make and add some memories from the feedback. In this case:
+1. We use the tax planning e-mail used before.
+2. The agent triages it as a `respond` e-mail.
+3. We `edit` the proposed schedule to:
+   * a shorter time.
+   * use e-mail addresses in the to field.
+   * shorten the title.
+4. An e-mail response is generated.
+5. We `edit` the proposed e-mail to:
+   * be shorter and less formal.
+   * use names and email address.
+
+Now when we run this we can compare the preferences in the store and we can see the agent updates these to include notes on the changes we made, for example the calendar preferences start out as:
+```
+30 minute meetings are preferred, but 15 minute meetings are also acceptable.
+```
+and after we have edited the too arguments it is updated to:
+```
+30 minute meetings are preferred, but 15 minute meetings are also acceptable.
+
+When creating calendar invitations, use specific email addresses for attendees rather than just names or roles.
+
+Use concise subject lines for calendar invitations.
+```
+### Responding to tool calls
+See [responding to tool calls](./04_respond_memory.ts).
+
+In this case it starts as before but we respond with some different feedback in the form of freeform test in our responses. Here:
+1. We use the tax planning e-mail used before.
+2. The agent triages it as a `respond` e-mail.
+3. We `respond` the proposed schedule to say:
+   * `Please schedule this for 30 minutes instead of 45 minutes, and I prefer afternoon meetings after 2pm.`
+4. Following this we `accept` the proposed schedule.
+5. An e-mail response is generated.
+6. We `respond` the proposed e-mail to say:
+   * `Shorter and less formal.`
+   * `Include a closing statement about looking forward to the meeting!`
+7. We then `accept` the proposed e-mail.
+
+Again we can compare the changes to the memories to see the effect of our responses. For example the calendar preferences change from the default to become:
+```
+30 minute meetings are preferred, but 15 minute meetings are also acceptable.
+Meetings should be scheduled in the afternoon, after 2pm, when possible.
+```
+The response preferences gain the following new section:
+```
+Additional preferences:
+- Make responses shorter and less formal when possible.
+- When confirming meetings, include a closing statement expressing that you look forward to the meeting.
+```
+## Deploy
+
+There is a `langgraph.json` file set up to run our `emailAsssitant` locally. We can start this by running:
+```sh
+npx @langchain/langgraph-cli dev
+```
+
+## Notes
+In our example the store we use is very simple:
+* The schema is a string.
+* We overwrite the memory with a replacement string.
+
+We could add semantic search to the long term memory then it is possible to search over collections of memories in the store. We do this by adding an embedding model to the store. A guide on this can be found here:
+* [Adding semantic search](https://langchain-ai.github.io/langgraphjs/how-tos/semantic-search/).

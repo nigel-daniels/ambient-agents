@@ -1,86 +1,95 @@
 import 'dotenv/config';
 import { formatEmailMarkdown, formatForDisplay, showGraph } from '../shared/utils.ts';
 import { TRIAGE_SYSTEM_PROMPT, DEFAULT_BACKGROUND, DEFAULT_TRIAGE_INSTRUCTIONS,
-	TRIAGE_USER_PROMPT, AGENT_SYSTEM_PROMPT_HITL, HITL_TOOLS_PROMPT,
-	DEFAULT_RESPONSE_PREFERENCES, DEFAULT_CAL_PREFERENCES } from '../shared/prompts.ts';
+	TRIAGE_USER_PROMPT, AGENT_SYSTEM_PROMPT_HITL_MEMORY, HITL_MEMORY_TOOLS_PROMPT,
+	DEFAULT_RESPONSE_PREFERENCES, DEFAULT_CAL_PREFERENCES,
+	MEMORY_UPDATE_INSTRUCTIONS, MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT } from '../shared/prompts.ts';
 import { writeEmail, scheduleMeeting, checkCalendarAvailability, done, question } from '../shared/tools.ts';
+import { state, routerSchema, userPreferencesSchema } from '../shared/schemas.ts';
 import format from 'string-template';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
-import { StateGraph, MessagesAnnotation, BaseStore, Annotation, START, END, Command, interrupt } from '@langchain/langgraph';
+import { StateGraph, START, END, Command, LangGraphRunnableConfig, interrupt } from '@langchain/langgraph';
 
-// Let's set up a models that can do something for us
+
+//////////// LLMs ////////////
 const llmNode = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});
 const llmAgent = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});
+const llmMemory = new ChatOpenAI({model: 'gpt-4.1', temperature: 0}); // Memory Note: Added for use in the memory updater
 
-//////////// State ////////////
+// First let's set up the tools lists
+const tools = [writeEmail, scheduleMeeting, checkCalendarAvailability, done];
+const toolsByName = tools.reduce((acc, tool) => {
+  acc[tool.name] = tool;
+  return acc;
+}, {});
 
-// Now let's define our state
-const state = Annotation.Root({
-	...MessagesAnnotation.spec,													// Merge in the MessagesAnnotation
-	emailInput: Annotation<Record<string, any>>({								// Let's use a Record in place of a Python dict
-    	default: () => {}
-	}),
-	classificationDescision: Annotation<'ignore' | 'respond' | 'notify'>({		// These form our literals and we default to 'ignore'
-		default: () => {'ignore'}
-	})
-});
+// Now we can define our routing LLM and provide it with our strutured output schema
+// This should coerce the output to match the schema
+const llmRouter = llmNode.withStructuredOutput(routerSchema, {name: 'route'});
+// Now we set up a new LLM this one with the tools and no response schema
+const llmWithTools = llmAgent.bindTools(tools, {tool_choice: 'any'});
+// Now use an LLM to update the memory
+const llm = llmMemory.withStructuredOutput(userPreferencesSchema);
+
 
 
 ///////////// Memory store /////////////
-const userPreferences = z.object({
-	chainOfThought: z.string().describe('Reasoning about which user preferences need to add / update if required'),
-	
-});
+// Now let's create some helper functions for the store management
 
-// Accepts a BaseStore, and namespace ('email_assistant', 'triage_preferences')
+// Accepts a store, and namespace ('email_assistant', 'triage_preferences')
 // and optionally default content to return, it returns the memory requested or the default
-function getMemoryStore(store, namespace, defaultContent = null) {
+async function getMemory(store, namespace, defaultContent = null) {
 	let memory = null;
+
 	// Check for an existing memory based on namespce and key
-	let userPreferences = store.get(namespace, 'user_preferences');
+	let userPreferences = await store.get(namespace, 'user_preferences');
 
 	if (userPreferences) {
 		// If we got a memory get it's content
 		memory = userPreferences.value;
 	} else {
 		// otherwise store the new memory and get that
-		store.put(namespace, 'user_preferences', defaultContent);
+		await store.put(namespace, 'user_preferences', defaultContent);
 		memory = defaultContent;
 	}
 	// return the memory we found or got
 	return memory;
 }
 
+// Accepts a store, namespace and the messages making up the memory
+async function updateMemory(store, namespace, messages) {
+	// Get the requested memory
+	let userPreferences = await store.get(namespace, 'user_preferences');
 
-//////////// Structured response ////////////
+	const result = await llm.invoke([
+			{role: 'system', content: format(MEMORY_UPDATE_INSTRUCTIONS, {namespace: namespace, currentProfile: userPreferences.value})},
+			...messages
+	]);
 
-// Now lets use Zod to define an output schema
-const routerSchema = z.object({
-	reasoning: z.string().describe('Step-by-step reasoning behind the classification.'),
-	classification: z.enum(['ignore', 'respond', 'notify']).describe(`The classification of an email:
-		'ignore' for irrelevant emails,
-		'notify' for important information that doesn't need a response,
-		'respond' for emails that need a reply`)
-});
+	await store.put(namespace, 'user_preferences', result.userPreferences);
+}
 
-// Now we can define our routing LLM and provide it with our strutured output schema
-// This should coerce the output to match the schema
-const llmRouter = llmNode.withStructuredOutput(routerSchema, {name: 'route'});
+
 
 //////////// Node and Command ////////////
 
-// Now we can build our router node
-async function triageRouter(state: state) {
+// Now we can build our router node (Memory Note: now it is passed the store)
+async function triageRouter(state: state, config: LangGraphRunnableConfig) {
 	// Data for the Command object we return
 	let goto = '';
 	let update = {};
 
+	const store = config.store;
+
+	// Memory Note: Now we check the store for updated triage instructions
+	// Check the store for the triage instructions
+	const triageInstructions = await getMemory(store, ['email_assistant', 'triage_preferences'], DEFAULT_TRIAGE_INSTRUCTIONS);
+
 	// Set up the systemPrompt with the defaults
 	const systemPrompt = format(TRIAGE_SYSTEM_PROMPT,{
 		background: DEFAULT_BACKGROUND,
-		triageInstructions: DEFAULT_TRIAGE_INSTRUCTIONS
+		triageInstructions: triageInstructions
 	});
 
 	// Destructure the emailInput and set up the user prompt
@@ -135,8 +144,10 @@ async function triageRouter(state: state) {
 }
 
 
-// A node to handle interrupts from the triage step
-async function triageInterruptHandler(state: state) {
+// A node to handle interrupts from the triage step (Memory Note: now it is passed the store)
+async function triageInterruptHandler(state: state, config: LangGraphRunnableConfig) {
+	const store = config.store;
+
 	// destructure the email input and format to markdown
 	const {author, to, subject, emailThread} = state.emailInput;
 	const emailMarkdown = formatEmailMarkdown(author, to, subject, emailThread);
@@ -177,10 +188,17 @@ async function triageInterruptHandler(state: state) {
 				role: 'user',
 				content: `User wants to reply to the email. Use this feedback to respond: ${userInput}`
 			});
+			// Memory Note: update the memory with this feedback
+			await updateMemory(store, ['email_assistant', 'triage_preferences'], [
+				{role: 'user', content: 'The user decided to respond to the email, so update the triage preferences to capture this.'},
+				...messages
+			]);
 			// Route to the response agent
 			goto = 'response_agent';
 			break;
 		case 'ignore':
+			// Memeory Note: update the memory with this feedback
+			await updateMemory(store, ['email_assistant', 'triage_preferences'], messages);
 			// User wants to ignore this so end
 			goto = END;
 			break;
@@ -200,29 +218,27 @@ async function triageInterruptHandler(state: state) {
 	});
 }
 
+
+
 //////////// AGENT ////////////
 // NB we could have used the createReactAgent for this, but this breaks it down for us.
 
-// First let's set up the tools lists,
-const tools = [writeEmail, scheduleMeeting, checkCalendarAvailability, question, done];
-const toolsByName = tools.reduce((acc, tool) => {
-  acc[tool.name] = tool;
-  return acc;
-}, {});
+// LLM Node (Memory Note: now it is passed the store)
+async function llmCall(state: state, config: LangGraphRunnableConfig) {
+	const store = config.store;
+	// Memory Note: Now we check the store for user preferences
+	// Check the store for calendar preferences
+	const calPreferences = await getMemory(store, ['email_assistant', 'cal_preferences'], DEFAULT_CAL_PREFERENCES);
+	// Check the store for response preferences
+	const responsePreferences = await getMemory(store, ['email_assistant', 'response_preferences'], DEFAULT_RESPONSE_PREFERENCES);
 
 
-// Now we set up a new LLM this one with the tools and no response schema
-const llmWithTools = llmAgent.bindTools(tools, {tool_choice: 'required'});
-
-
-// LLM Node
-async function llmCall(state: state) {
-	const systemPrompt = format(AGENT_SYSTEM_PROMPT_HITL, {
-		toolsPrompt: HITL_TOOLS_PROMPT,
+	const systemPrompt = format(AGENT_SYSTEM_PROMPT_HITL_MEMORY, {
+		toolsPrompt: HITL_MEMORY_TOOLS_PROMPT,
 		date: new Date().toISOString().split('T')[0],
 		background: DEFAULT_BACKGROUND,
-		responsePreferences: DEFAULT_RESPONSE_PREFERENCES,
-		calPreferences: DEFAULT_CAL_PREFERENCES
+		responsePreferences: responsePreferences,
+		calPreferences: calPreferences
 	});
 
 	const result = await llmWithTools.invoke([{
@@ -236,8 +252,10 @@ async function llmCall(state: state) {
 }
 
 
-// Handle the response based on type for different tools
-async function interruptHandler(state:state) {
+// Handle the response based on type for different tools  (Memory Note: now it is passed the store)
+async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
+	const store = config.store;
+
 	// Store the messages
 	const result =[];
 
@@ -349,6 +367,16 @@ async function interruptHandler(state:state) {
 						const observation = await tool.invoke(editedArgs);
 						result.push({role: 'tool', content: observation, tool_call_id: toolCall.id});
 
+						// Memory Note: Now let's update the preferences for the appropriate tool call
+						if (toolCall.name == 'write_email') {
+							await updateMemory(store, ['email_assistant', 'response_preferences'], [
+								{role: 'user', content: `User edited the email response. Here is the initial email generated by the assistant: ${JSON.stringify(toolCall.args,null,2)}. Here is the edited email: ${JSON.stringify(editedArgs,null,2)}. Follow all instructions above, and remember: ${MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT}`}
+							]);
+						} else {
+							await updateMemory(store, ['email_assistant', 'cal_preferences'], [
+								{role: 'user', content: `User edited the email response. Here is the initial calendar invitation generated by the assistant: ${JSON.stringify(toolCall.args,null,2)}. Here is the edited calendar invitation: ${JSON.stringify(editedArgs,null,2)}. Follow all instructions above, and remember: ${MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT}`}
+							]);
+						}
 					} else {
 						throw new Error('Invalid tool call: ' + toolCall.name);
 					}
@@ -356,15 +384,31 @@ async function interruptHandler(state:state) {
 
 				case 'ignore':
 					// The user said to ignore this so we'll just END
+					// Memory Note: In each case we update the triage instructions
 					switch (toolCall.name) {
 						case 'write_email':
 							result.push({role: 'tool', content: 'User ignored this email draft. Ignore this email and end the workflow.', tool_call_id: toolCall.id});
+							await updateMemory(store, ['email_assistant', 'triage_preferences'], [
+								...state.messages,
+								...result,
+								{role: 'user', content: `The user ignored the email draft. That means they did not want to respond to the email. Update the triage preferences to ensure emails of this type are not classified as respond. Follow all instructions above, and remember: ${MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT}`}
+							]);
 							break;
 						case 'schedule_meeting':
 							result.push({role: 'tool', content: 'User ignored this calendar meeting draft. Ignore this email and end the workflow.', tool_call_id: toolCall.id});
+							await updateMemory(store, ['email_assistant', 'triage_preferences'], [
+								...state.messages,
+								...result,
+								{role: 'user', content: `The user ignored the calendar meeting draft. That means they did not want to schedule a meeting for this email. Update the triage preferences to ensure emails of this type are not classified as respond. Follow all instructions above, and remember: ${MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT}`}
+							]);
 							break;
 						case 'question':
 							result.push({role: 'tool', content: 'User ignored this question. Ignore this email and end the workflow.', tool_call_id: toolCall.id});
+							await updateMemory(store, ['email_assistant', 'triage_preferences'], [
+								...state.messages,
+								...result,
+								{role: 'user', content: `The user ignored the Question. That means they did not want to answer the question or deal with this email. Update the triage preferences to ensure emails of this type are not classified as respond. Follow all instructions above, and remember: ${MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT}`}
+							]);
 							break;
 						default:
 							throw new Error('Invalid tool call: ' + toolCall.name);
@@ -378,12 +422,23 @@ async function interruptHandler(state:state) {
 					// Here we got some user feedback
 					const userFeedback = response.args;
 					// In these cases don't execute the tool but append the user feedback and try again
+					// memory Notes: for the email and calendar tools we can use the response to improve the preferences
 					switch (toolCall.name) {
 						case 'write_email':
 							result.push({role: 'tool', content: `User gave feedback, which can we incorporate into the email. Feedback: ${userFeedback}`, tool_call_id: toolCall.id});
+							await updateMemory(store, ['email_assistant', 'response_preferences'], [
+								...state.messages,
+								...result,
+								{role: 'user', content: `User gave feedback, which we can use to update the response preferences. Follow all instructions above, and remember: ${MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT}`}
+							]);
 							break;
 						case 'schedule_meeting':
 							result.push({role: 'tool', content: `User gave feedback, which can we incorporate into the meeting request. Feedback: ${userFeedback}`, tool_call_id: toolCall.id});
+							await updateMemory(store, ['email_assistant', 'cal_preferences'], [
+								...state.messages,
+								...result,
+								{role: 'user', content: `User gave feedback, which we can use to update the calendar preferences. Follow all instructions above, and remember: ${MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT}`}
+							]);
 							break;
 						case 'question':
 							result.push({role: 'tool', content: `User answered the question, which can we can use for any follow up actions. Feedback: ${userFeedback}`, tool_call_id: toolCall.id});
@@ -447,6 +502,8 @@ export const agent = new StateGraph(state)
 	.addConditionalEdges('llm_call', shouldContinue, {'interrupt_handler': 'interrupt_handler', '__end__': END})
 	.compile();
 
+
+
 //////////// Assistant ////////////
 // Compose the router and the agent together
 // Note that in JS we need to specify how the router ends
@@ -464,4 +521,4 @@ export const overallWorkflow = new StateGraph(state)
 export const emailAssistant = overallWorkflow.compile();
 
 // Visualize the graph
-// showGraph(emailAssistant, true);
+showGraph(emailAssistant, true);

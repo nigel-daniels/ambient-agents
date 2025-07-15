@@ -52,6 +52,9 @@ The router will triage the incoming e-mail.
 First we need to consider the state information we need so we can track the messages and additional information.
 #### Structured response
 To ensure the agent ands up responding in a structured manner we create a schema that describes what the response should look like and bind it to the LLM, this coerces the LLM to respond with a well structured reply that conforms to our schema.
+
+Note: The schemas for the state and the strucutred response can be found in the shared [schemas](../shared/schemas.ts) file.
+
 #### Node and Command
 Looking at the main decision node itself, note that it is returning a `Command` this is in place of using a Conditional Edge as we have in previous exercises. The returned `Command` gives direct instruction on where to head next as well as updating the state. Also note the node prompts are coming from the [prompt](./prompt.ts) file (I'm using the `string-template` lib to allow us to have a format like behavior as string literals need the values defining ahead of time.) and some functions are in the [utils](./shared/utils.ts) file, these also get used subsequently.
 ### Agent

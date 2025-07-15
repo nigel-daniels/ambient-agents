@@ -154,3 +154,41 @@ export function formatForDisplay(toolCall){
 
 	return display;
 }
+
+
+// Format a memory record for display
+export async function displayMemoryContent(store, namespace = null) {
+	// Show the current memory content for one or all namespaces
+	console.log('\n============ CURRENT MEMORY CONTENT ============');
+
+	if (namespace) {
+		const memory = await store.get(namespace, 'user_preferences');
+		console.log(`\n------------ ${namespace[1]} ------------`);
+
+		if (memory) {
+			console.log(JSON.stringify(memory.value, null, 2));
+		} else {
+			console.log('No memory found.');
+		}
+	} else {
+		const namespaces = [
+			['email_assistant', 'triage_preferences'],
+			['email_assistant', 'response_preferences'],
+			['email_assistant', 'cal_preferences'],
+			['email_assistant', 'background']
+		];
+
+		for (const namespace of namespaces) {
+			const memory = await store.get(namespace, 'user_preferences');
+			console.log(`\n------------ ${namespace[1]} ------------`);
+
+			if (memory) {
+				console.log(JSON.stringify(memory.value, null, 2));
+			} else {
+				console.log('No memory found.');
+			}
+		}
+	}
+
+	console.log('================================================');
+}

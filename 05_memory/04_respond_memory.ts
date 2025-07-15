@@ -1,10 +1,11 @@
 import { overallWorkflow } from './assistant.ts';
-import { prettyPrint } from '../shared/utils.ts';
-import { MemorySaver, Command } from '@langchain/langgraph';
+import { prettyPrint, displayMemoryContent } from '../shared/utils.ts';
+import { MemorySaver, Command, InMemoryStore } from '@langchain/langgraph';
 import { v4 as uuid4 } from 'uuid';
 
 let interruptObject = {};
 
+// Here is our test email
 const emailinputRespond = {
     author: 'Project Manager <pm@client.com>',
     to: 'Lance Martin <lance@company.com>',
@@ -19,11 +20,18 @@ Regards,
 Project Manager`
 };
 
+// Now let's set up the graph
 const checkpointer = new MemorySaver();
-const graph = overallWorkflow.compile({checkpointer: checkpointer});
+const store = new InMemoryStore();
+
+const graph = overallWorkflow.compile({checkpointer: checkpointer, store: store});
+
+// Set up a thread
 const threadId = uuid4();
 const threadConfig = {configurable: {thread_id: threadId}};
 
+// Run this to the first interrupt where the triage is 'respond'
+// and there are 'schedule_meeting' and 'write_email' tool calls.
 console.log('Running the graph until the first interrupt...');
 for await (const chunk of await graph.stream({emailInput: emailinputRespond}, threadConfig)) {
 	if ('__interrupt__' in chunk) {
@@ -32,6 +40,9 @@ for await (const chunk of await graph.stream({emailInput: emailinputRespond}, th
 		console.log('Action request: ' + JSON.stringify(interruptObject.value[0].action_request, null, 2));
 	}
 }
+
+// Let's take a look at what is in the calendar preferences memory at this point
+await displayMemoryContent(store, ['email_assistant', 'cal_preferences']);
 
 console.log(`\nSimulating responding to the ${interruptObject.value[0].action_request.action} tool call...`);
 // Set up a response
@@ -46,6 +57,10 @@ for await (const chunk of await graph.stream(new Command({resume: [{type: 'respo
 	}
 }
 
+// Let's take a look at what is in the calendar preferences memory at this point
+console.log('\nChecking memory after responding to schedule_meeting:');
+await displayMemoryContent(store, ['email_assistant', 'cal_preferences']);
+
 console.log(`\nSimulating user accepting the ${interruptObject.value[0].action_request.action} tool call...`);
 for await (const chunk of await graph.stream(new Command({resume: [{type: 'accept'}]}), threadConfig,)) {
 	if ('__interrupt__' in chunk) {
@@ -54,6 +69,14 @@ for await (const chunk of await graph.stream(new Command({resume: [{type: 'accep
 		console.log('Action request: ' + JSON.stringify(interruptObject.value[0].action_request, null, 2));
 	}
 }
+
+// Let's take a look at what is in the calendar preferences memory at this point
+console.log('\nChecking memory after accepting schedule_meeting:');
+await displayMemoryContent(store, ['email_assistant', 'cal_preferences']);
+
+
+// Let's take a look at what is in the response preferences memory at this point
+await displayMemoryContent(store, ['email_assistant', 'response_preferences']);
 
 console.log(`\nSimulating user responding to ${interruptObject.value[0].action_request.action} tool call...`);
 const emailResponse = 'Shorter and less formal. Include a closing statement about looking forward to the meeting!';
@@ -69,6 +92,10 @@ for await (const chunk of await graph.stream(new Command({resume: [{type: 'respo
 	}
 }
 
+// Let's take a look at what is in the response preferences memory at this point
+console.log('\nChecking memory after responding to write_email:');
+await displayMemoryContent(store, ['email_assistant', 'response_preferences']);
+
 console.log(`\nSimulating user accepting the ${interruptObject.value[0].action_request.action} tool call...`);
 for await (const chunk of await graph.stream(new Command({resume: [{type: 'accept'}]}), threadConfig,)) {
 	if ('__interrupt__' in chunk) {
@@ -78,6 +105,13 @@ for await (const chunk of await graph.stream(new Command({resume: [{type: 'accep
 	}
 }
 
+// Let's take a look at what is in the response preferences memory at this point
+console.log('\nChecking memory after accepting write_email:');
+await displayMemoryContent(store, ['email_assistant', 'response_preferences']);
+
+
+
+// Finally let's examine the messages
 const state = await graph.getState(threadConfig);
 
 for (const message of state.values.messages) {

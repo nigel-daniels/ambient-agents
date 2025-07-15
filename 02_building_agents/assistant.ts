@@ -4,43 +4,30 @@ import { TRIAGE_SYSTEM_PROMPT, DEFAULT_BACKGROUND, DEFAULT_TRIAGE_INSTRUCTIONS,
 	TRIAGE_USER_PROMPT, AGENT_SYSTEM_PROMPT, AGENT_TOOLS_PROMPT,
 	DEFAULT_RESPONSE_PREFERENCES, DEFAULT_CAL_PREFERENCES } from '../shared/prompts.ts';
 import { writeEmail, scheduleMeeting, checkCalendarAvailability, done } from '../shared/tools.ts';
+import { state, routerSchema } from '../shared/schemas.ts';
 import format from 'string-template';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
-import { StateGraph, MessagesAnnotation, Annotation, START, END, Command } from '@langchain/langgraph';
+import { StateGraph, START, END, Command } from '@langchain/langgraph';
 
-// Let's set up a models that can do something for us
+//////////// LLMs ////////////
 const llmNode = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});
 const llmAgent = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});
 
-//////////// State ////////////
-
-// Now let's define our state
-const state = Annotation.Root({
-	...MessagesAnnotation.spec,													// Merge in the MessagesAnnotation
-	emailInput: Annotation<Record<string, any>>({								// Let's use a Record in place of a Python dict
-    	default: () => {}
-	}),
-	classificationDescision: Annotation<'ignore' | 'respond' | 'notify'>({		// These form our literals and we default to 'ignore'
-		default: () => {'ignore'}
-	})
-});
-
-//////////// Structured response ////////////
-
-// Now lets use Zod to define an output schema
-const routerSchema = z.object({
-	reasoning: z.string().describe('Step-by-step reasoning behind the classification.'),
-	classification: z.enum(['ignore', 'respond', 'notify']).describe(`The classification of an email:
-		'ignore' for irrelevant emails,
-		'notify' for important information that doesn't need a response,
-		'respond' for emails that need a reply`)
-});
+// First let's set up the tools lists
+const tools = [writeEmail, scheduleMeeting, checkCalendarAvailability, done];
+const toolsByName = tools.reduce((acc, tool) => {
+  acc[tool.name] = tool;
+  return acc;
+}, {});
 
 // Now we can define our routing LLM and provide it with our strutured output schema
 // This should coerce the output to match the schema
 const llmRouter = llmNode.withStructuredOutput(routerSchema, {name: 'route'});
+// Now we set up a new LLM this one with the tools and no response schema
+const llmWithTools = llmAgent.bindTools(tools, {tool_choice: 'any'});
+
+
 
 //////////// Node and Command ////////////
 
@@ -110,20 +97,10 @@ async function triageRouter(state: state) {
 	});
 }
 
+
+
 //////////// AGENT ////////////
 // NB we could have used the createReactAgent for this, but this breaks it down for us.
-
-// First let's set up the tools lists
-const tools = [writeEmail, scheduleMeeting, checkCalendarAvailability, done];
-const toolsByName = tools.reduce((acc, tool) => {
-  acc[tool.name] = tool;
-  return acc;
-}, {});
-
-
-// Now we set up a new LLM this one with the tools and no response schema
-const llmWithTools = llmAgent.bindTools(tools, {tool_choice: 'any'});
-
 
 // LLM Node
 async function llmCall(state: state) {
@@ -191,22 +168,23 @@ const agent = new StateGraph(state)
 	.addEdge('tool_handler', 'llm_call')
 	.compile();
 
+
+
 //////////// Assistant ////////////
 // Compose the router and the agent together
 // Note that in JS we need to specify how the router ends
-const emailAssistant = new StateGraph(state)
+const overallWorkflow = new StateGraph(state)
 	.addNode('triage_router', triageRouter, {
 		ends: ['response_agent', END]
 	})
 	.addNode('response_agent', agent)
-	.addEdge(START, 'triage_router')
-	.compile();
+	.addEdge(START, 'triage_router');
 
-
+const emailAssistant = overallWorkflow.compile();
 
 //////////// Local Tests ////////////
 // Comment these in to run this locally or comment them out to use LangSmith
-showGraph(overallWorkflow, true);
+showGraph(emailAssistant, true);
 
 const emailInput1 = {
 	author: 'System Admin <sysadmin@company.com>',
