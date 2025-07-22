@@ -129,8 +129,11 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-// Scratchpad code
+# Scratchpad code
 test.ts
 
 # LangGraph API
 .langgraph_api
+
+# Google API tokens
+.secrets/

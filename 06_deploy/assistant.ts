@@ -1,15 +1,18 @@
 import 'dotenv/config';
-import { formatEmailMarkdown, formatForDisplay, showGraph } from '../shared/utils.ts';
-import { TRIAGE_SYSTEM_PROMPT, DEFAULT_BACKGROUND, DEFAULT_TRIAGE_INSTRUCTIONS,
-	TRIAGE_USER_PROMPT, AGENT_SYSTEM_PROMPT_HITL_MEMORY, HITL_MEMORY_TOOLS_PROMPT,
-	DEFAULT_RESPONSE_PREFERENCES, DEFAULT_CAL_PREFERENCES,
-	MEMORY_UPDATE_INSTRUCTIONS, MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT } from '../shared/prompts.ts';
-import { writeEmail, scheduleMeeting, checkCalendarAvailability, done, question } from '../shared/tools.ts';
-import { state, routerSchema, userPreferencesSchema } from '../shared/schemas.ts';
-import format from 'string-template';
+
 import { ChatOpenAI } from '@langchain/openai';
-import { tool } from '@langchain/core/tools';
+
 import { StateGraph, START, END, Command, LangGraphRunnableConfig, interrupt } from '@langchain/langgraph';
+
+import { fetchEmailsTool, sendEmailTool, checkCalendarTool, scheduleMeetingTool, question, done, markAsRead } from './tools';
+import { TRIAGE_SYSTEM_PROMPT, TRIAGE_USER_PROMPT, AGENT_SYSTEM_PROMPT,
+	DEFAULT_TRIAGE_INSTRUCTIONS, DEFAULT_BACKGROUND, DEFAULT_RESPONSE_PREFERENCES,
+	DEFAULT_CAL_PREFERENCES, MEMORY_UPDATE_INSTRUCTIONS,
+	MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT, TOOLS_PROMPT } from './prompts.ts';
+import { state, routerSchema, userPreferencesSchema } from '../shared/schemas.ts';
+import { formatForDisplay, formatGmailMarkdown } from '../shared/utils.ts';
+
+import format from 'string-template';
 
 
 //////////// LLMs ////////////
@@ -18,7 +21,7 @@ const llmAgent = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});
 const llmMemory = new ChatOpenAI({model: 'gpt-4.1', temperature: 0}); // Memory Note: Added for use in the memory updater
 
 // First let's set up the tools lists
-const tools = [writeEmail, scheduleMeeting, checkCalendarAvailability, done];
+const tools = [fetchEmailsTool, sendEmailTool, scheduleMeetingTool, checkCalendarAvailability, question, done];
 const toolsByName = tools.reduce((acc, tool) => {
   acc[tool.name] = tool;
   return acc;
@@ -80,10 +83,21 @@ async function triageRouter(state: state, config: LangGraphRunnableConfig) {
 	let goto = '';
 	let update = {};
 
-	const store = config.store;
+	// Destructure the emailInput and set up the user prompt
+	const { author, to, subject, emailThread, emailId } = state.emailInput;
+	const userPrompt = format(TRIAGE_USER_PROMPT,{
+		author: author,
+		to: to,
+		subject: subject,
+		emailThread: emailThread
+	});
+
+	// Get the email MD for the agent inbox
+	const emailMarkdown = formatGmailMarkdown( subject, author, to, emailThread, emailId );
 
 	// Memory Note: Now we check the store for updated triage instructions
 	// Check the store for the triage instructions
+	const store = config.store;
 	const triageInstructions = await getMemory(store, ['email_assistant', 'triage_preferences'], DEFAULT_TRIAGE_INSTRUCTIONS);
 
 	// Set up the systemPrompt with the defaults
@@ -92,14 +106,6 @@ async function triageRouter(state: state, config: LangGraphRunnableConfig) {
 		triageInstructions: triageInstructions
 	});
 
-	// Destructure the emailInput and set up the user prompt
-	const {author, to, subject, emailThread} = state.emailInput;
-	const userPrompt = format(TRIAGE_USER_PROMPT,{
-		author: author,
-		to: to,
-		subject: subject,
-		emailThread: emailThread
-	});
 
 	// Now were good to call the LLM and get the routing decision
 	const result = await llmRouter.invoke([
@@ -110,6 +116,7 @@ async function triageRouter(state: state, config: LangGraphRunnableConfig) {
 	// Build up the command data based on the response
 	switch (result.classification) {
 		case 'respond':
+			console.log('📧 Classification: RESPOND - This email requires a response');
 			goto = 'response_agent';
 			update = {
 				classificationDecision: result.classification,
@@ -120,13 +127,14 @@ async function triageRouter(state: state, config: LangGraphRunnableConfig) {
 			};
 			break;
 		case 'ignore':
+			console.log('🚫 Classification: IGNORE - This email can be safely ignored');
 			goto = END;
 			update = {
 				classificationDecision: result.classification
 			};
 			break;
 		case 'notify':
-			// HITL Note now we go to the interrupt handler instead of END
+			console.log('🔔 Classification: NOTIFY - This email contains important information');
 			goto = 'triage_interrupt_handler';
 			update = {
 				classificationDecision: result.classification
@@ -144,13 +152,17 @@ async function triageRouter(state: state, config: LangGraphRunnableConfig) {
 }
 
 
-// A node to handle interrupts from the triage step (Memory Note: now it is passed the store)
+// A node to handle interrupts from the triage step
 async function triageInterruptHandler(state: state, config: LangGraphRunnableConfig) {
+	// Data for the Command object we return
+	let goto = '';
+	let update = {};
+
 	const store = config.store;
 
 	// destructure the email input and format to markdown
-	const {author, to, subject, emailThread} = state.emailInput;
-	const emailMarkdown = formatEmailMarkdown(author, to, subject, emailThread);
+	const {author, to, subject, emailThread, emailId} = state.emailInput;
+	const emailMarkdown = formatGmailMarkdown(author, to, subject, emailThread, emailId);
 
 	// Construct a message
 	const messages = [{
@@ -201,7 +213,6 @@ async function triageInterruptHandler(state: state, config: LangGraphRunnableCon
 				role: 'user',
 				content: 'The user decided to ignore the email even though it was classified as notify. Update triage preferences to capture this.'
 			});
-			// Memeory Note: update the memory with this feedback
 			await updateMemory(store, ['email_assistant', 'triage_preferences'], messages);
 			// User wants to ignore this so end
 			goto = END;
@@ -213,21 +224,17 @@ async function triageInterruptHandler(state: state, config: LangGraphRunnableCon
 	}
 
 	// Put the messages in the update
-	const update = {messages: messages};
+	update = {messages: messages};
 
 	// Now return a command telling us where we go next and update the state.
-	return new Command({
-		goto: goto,
-		update: update
-	});
+	return new Command({ goto: goto, update: update });
 }
 
 
 
 //////////// AGENT ////////////
-// NB we could have used the createReactAgent for this, but this breaks it down for us.
 
-// LLM Node (Memory Note: now it is passed the store)
+// LLM Node
 async function llmCall(state: state, config: LangGraphRunnableConfig) {
 	const store = config.store;
 	// Memory Note: Now we check the store for user preferences
@@ -237,8 +244,8 @@ async function llmCall(state: state, config: LangGraphRunnableConfig) {
 	const responsePreferences = await getMemory(store, ['email_assistant', 'response_preferences'], DEFAULT_RESPONSE_PREFERENCES);
 
 
-	const systemPrompt = format(AGENT_SYSTEM_PROMPT_HITL_MEMORY, {
-		toolsPrompt: HITL_MEMORY_TOOLS_PROMPT,
+	const systemPrompt = format(AGENT_SYSTEM_PROMPT, {
+		toolsPrompt: TOOLS_PROMPT,
 		background: DEFAULT_BACKGROUND,
 		responsePreferences: responsePreferences,
 		calPreferences: calPreferences
@@ -268,23 +275,23 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 	// Go thru the tool calls
 	for (const toolCall of state.messages[state.messages.length-1].tool_calls) {
 		// Allowed HITL tools
-		const hitlTools = ['write_email', 'schedule_meeting', 'question'];
+		const hitlTools = ['send_email_tool', 'schedule_meeting_tool', 'question'];
 
 		// Let's see if the tool call is an HITL tool?
 		if (hitlTools.includes(toolCall.name)) {
 			// SETUP of the interrupt
 			// Get the email input
-			const {author, to, subject, emailThread} = state.emailInput;
-			const emailMarkdown = formatEmailMarkdown(author, to, subject, emailThread);
+			const {author, to, subject, emailThread, emailId} = state.emailInput;
+			const originalEmailMarkdown = formatGmailMarkdown(author, to, subject, emailThread, emailId);
 			// Format the tool call for display
 			const toolDisplay = formatForDisplay(toolCall);
 			// Create the description
-			const description = emailMarkdown + toolDisplay;
+			const description = originalEmailMarkdown + toolDisplay;
 
 			// Now lets configure the Agent inbox rendering based on the tool
 			let config = {};
 			switch (toolCall.name) {
-				case 'write_email':
+				case 'send_email_tool':
 					config = {
 						allow_ignore: true,
 						allow_respond: true,
@@ -292,7 +299,7 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 						allow_accept: true
 					};
 					break;
-				case 'schedule_meeting':
+				case 'schedule_meeting_tool':
 					config = {
 						allow_ignore: true,
 						allow_respond: true,
@@ -371,7 +378,7 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 						result.push({role: 'tool', content: observation, tool_call_id: toolCall.id});
 
 						// Memory Note: Now let's update the preferences for the appropriate tool call
-						if (toolCall.name == 'write_email') {
+						if (toolCall.name == 'send_email_tool') {
 							await updateMemory(store, ['email_assistant', 'response_preferences'], [
 								{role: 'user', content: `User edited the email response. Here is the initial email generated by the assistant: ${JSON.stringify(toolCall.args,null,2)}. Here is the edited email: ${JSON.stringify(editedArgs,null,2)}. Follow all instructions above, and remember: ${MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT}`}
 							]);
@@ -389,7 +396,7 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 					// The user said to ignore this so we'll just END
 					// Memory Note: In each case we update the triage instructions
 					switch (toolCall.name) {
-						case 'write_email':
+						case 'send_email_tool':
 							result.push({role: 'tool', content: 'User ignored this email draft. Ignore this email and end the workflow.', tool_call_id: toolCall.id});
 							goto = END;
 							await updateMemory(store, ['email_assistant', 'triage_preferences'], [
@@ -398,7 +405,7 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 								{role: 'user', content: `The user ignored the email draft. That means they did not want to respond to the email. Update the triage preferences to ensure emails of this type are not classified as respond. Follow all instructions above, and remember: ${MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT}`}
 							]);
 							break;
-						case 'schedule_meeting':
+						case 'schedule_meeting_tool':
 							result.push({role: 'tool', content: 'User ignored this calendar meeting draft. Ignore this email and end the workflow.', tool_call_id: toolCall.id});
 							goto = END;
 							await updateMemory(store, ['email_assistant', 'triage_preferences'], [
@@ -430,7 +437,7 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 					// In these cases don't execute the tool but append the user feedback and try again
 					// memory Notes: for the email and calendar tools we can use the response to improve the preferences
 					switch (toolCall.name) {
-						case 'write_email':
+						case 'send_email_tool':
 							result.push({role: 'tool', content: `User gave feedback, which can we incorporate into the email. Feedback: ${userFeedback}`, tool_call_id: toolCall.id});
 							await updateMemory(store, ['email_assistant', 'response_preferences'], [
 								...state.messages,
@@ -438,7 +445,7 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 								{role: 'user', content: `User gave feedback, which we can use to update the response preferences. Follow all instructions above, and remember: ${MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT}`}
 							]);
 							break;
-						case 'schedule_meeting':
+						case 'schedule_meeting_tool':
 							result.push({role: 'tool', content: `User gave feedback, which can we incorporate into the meeting request. Feedback: ${userFeedback}`, tool_call_id: toolCall.id});
 							await updateMemory(store, ['email_assistant', 'cal_preferences'], [
 								...state.messages,
@@ -480,7 +487,9 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 }
 
 // Conditional Edges
-async function shouldContinue(state: state) {
+async function shouldContinue(state: state, config: LangGraphRunnableConfig) {
+	const store = config.store;
+
 	let result = null;
 	// get the last message
 	const lastMessage = state.messages[state.messages.length-1];
@@ -488,7 +497,7 @@ async function shouldContinue(state: state) {
 	if (lastMessage.tool_calls) {
 		for (const toolCall of lastMessage.tool_calls) {
 			if (toolCall.name == 'Done') {
-				result = END;
+				result = 'mark_as_read_node';
 			} else {
 				result = 'interrupt_handler';
 			}
@@ -498,6 +507,12 @@ async function shouldContinue(state: state) {
 	return result;
 }
 
+// New node for Gmail to mark emails as read
+async function markAsReadNode(state: state) {
+	markAsRead(state.emailInput.emailId);
+}
+
+
 // Build the Agent Graph
 // Note we drop the llmCall -> toolHandler edge
 export const agent = new StateGraph(state)
@@ -505,8 +520,10 @@ export const agent = new StateGraph(state)
 	.addNode('interrupt_handler', interruptHandler, {
 		ends: ['llm_call', END]
 	})
+	.addNode('mark_as_read_node', markAsReadNode)
 	.addEdge(START, 'llm_call')
-	.addConditionalEdges('llm_call', shouldContinue, {'interrupt_handler': 'interrupt_handler', '__end__': END})
+	.addConditionalEdges('llm_call', shouldContinue, {'interrupt_handler': 'interrupt_handler', 'mark_as_read_node': 'mark_as_read_node'})
+	.addEdge('mark_as_read_node', END)
 	.compile();
 
 
@@ -523,7 +540,9 @@ export const overallWorkflow = new StateGraph(state)
 		ends: ['response_agent', END]
 	})
 	.addNode('response_agent', agent)
-	.addEdge(START, 'triage_router');
+	.addNode('mark_as_read_node', markAsReadNode)
+	.addEdge(START, 'triage_router')
+	.addEdge('mark_as_read_node', END);
 
 export const emailAssistant = overallWorkflow.compile();
 

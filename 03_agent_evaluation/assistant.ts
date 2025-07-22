@@ -157,7 +157,7 @@ async function shouldContinue(state: state) {
 }
 
 // Build the Agent Graph
-const agent = new StateGraph(state)
+export const agent = new StateGraph(state)
 	.addNode('llm_call', llmCall)
 	.addNode('tool_handler', toolHandler)
 	.addEdge(START, 'llm_call')

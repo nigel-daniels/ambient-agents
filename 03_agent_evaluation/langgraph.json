@@ -1,5 +1,11 @@
 {
-  "graphs": {
-	"deploy": "./assistant.ts:emailAssistant"
-  }
+	"dockerfile_lines": [],
+	"graphs": {
+		"assistant": "./assistant.ts:emailAssistant"
+	},
+	"node_version": "20",
+	"env": ".env",
+	"dependencies": [
+  		"."
+	]
 }

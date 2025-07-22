@@ -310,12 +310,15 @@ async function interruptHandler(state:state) {
 					switch (toolCall.name) {
 						case 'write_email':
 							result.push({role: 'tool', content: 'User ignored this email draft. Ignore this email and end the workflow.', tool_call_id: toolCall.id});
+							goto = END;
 							break;
 						case 'schedule_meeting':
 							result.push({role: 'tool', content: 'User ignored this calendar meeting draft. Ignore this email and end the workflow.', tool_call_id: toolCall.id});
+							goto = END;
 							break;
 						case 'question':
 							result.push({role: 'tool', content: 'User ignored this question. Ignore this email and end the workflow.', tool_call_id: toolCall.id});
+							goto = END;
 							break;
 						default:
 							throw new Error('Invalid tool call: ' + toolCall.name);
