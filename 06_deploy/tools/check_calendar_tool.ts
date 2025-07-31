@@ -33,11 +33,11 @@ async function getCalendarEvents(dates) {
 		const creds = getCredentials();
 		const service =  google.calendar({version: 'v3', auth: creds});
 
-		const result = 'Calendar events:\n\n';
+		let result = 'Calendar events:\n\n';
 
-		for (dateStr of dates) {
+		for (const dateStr of dates) {
 			// Parse the date we got
-			const [day, month, year] = dateStrsplit('-');
+			const [year, month, day] = dateStr.split('-');
 
 			// Set up our start and end of the day
 			const startTime = `${year}-${month}-${day}T00:00:00Z`;
@@ -52,7 +52,9 @@ async function getCalendarEvents(dates) {
 				orderBy: 'startTime'
 			});
 
-			const events = eventResult.items ? eventResult.items : [];
+			const events = eventResult.data.items ? eventResult.data.items : [];
+
+			console.log('events: ' + JSON.stringify(events,null,2) + '\nlength: ' + events.length);
 
 			// If the day is clear update the result and carry on
 			if (events.length == 0) {
@@ -101,8 +103,9 @@ async function getCalendarEvents(dates) {
 				// calculate the available slots
 				const availableSlots = [];
 				let current = workStart;
-
+				console.log('busySlots: ' + JSON.stringify(busySlots,null,2));
 				for (const [start, end] of busySlots) {
+					console.log(`start: ${start}\nend: ${end}`);
   					if (current < start) {
     					availableSlots.push([current, start]);
   					}
@@ -110,9 +113,9 @@ async function getCalendarEvents(dates) {
 				}
 
 				if (current < workEnd) {
-					availableSlots.push([current, start]);
+					availableSlots.push([current, workEnd]);
 				}
-
+				console.log('availableSlots: ' + JSON.stringify(availableSlots,null,2));
 				// Format the slots
 				if (availableSlots) {
 					result += '  Available: ';

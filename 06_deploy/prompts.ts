@@ -47,11 +47,11 @@ When handling emails, follow these steps:
 1. Carefully analyze the email content and purpose
 2. IMPORTANT --- always call a tool and call one tool at a time until the task is complete:
 3. If the incoming email asks the user a direct question and you do not have context to answer the question, use the question tool to ask the user for the answer
-4. For responding to the email, draft a response email with the write_email tool
-5. For meeting requests, use the check_calendar_availability tool to find open time slots
-6. To schedule a meeting, use the schedule_meeting tool with a datetime object for the preferred_day parameter
+4. For responding to the email, draft a response email with the write_email_tool
+5. For meeting requests, use the check_calendar_tool to find open time slots
+6. To schedule a meeting, use the schedule_meeting_tool with a datetime object for the preferredDay parameter
    - Today's date is {date} - use this for scheduling meetings accurately
-7. If you scheduled a meeting, then draft a short response email using the write_email tool
+7. If you scheduled a meeting, then draft a short response email using the write_email_tool
 8. After using the write_email tool, the task is complete
 9. If you have sent the email, then use the Done tool to indicate that the task is complete
 </ Instructions >
@@ -208,9 +208,8 @@ Remember:
 // Standard tool descriptions for insertion into prompts
 // Tool descriptions for workflow
 export const TOOLS_PROMPT = `
-1. fetch_emails_tool(emailAddress, minutesSince) - Fetch recent emails from Gmail
-2. send_email_tool(emailId, responseText, emailAddress, additionalRecipients) - Send a reply to an email thread
-3. check_calendar_tool(dates) - Check Google Calendar availability for specific dates
-4. schedule_meeting_tool(attendees, title, startTime, endTime, organizerEmail, timezone) - Schedule a meeting and send invites
-6. Done - E-mail has been sent
+1. send_email_tool(emailId, responseText, emailAddress, additionalRecipients) - Send a reply to an email thread
+2. check_calendar_tool(dates) - Check Google Calendar availability for specific dates
+3. schedule_meeting_tool(attendees, title, startTime, endTime, organizerEmail, timezone) - Schedule a meeting and send invites
+4. Done - E-mail has been sent
 `;

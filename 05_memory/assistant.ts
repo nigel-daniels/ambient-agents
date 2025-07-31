@@ -239,6 +239,7 @@ async function llmCall(state: state, config: LangGraphRunnableConfig) {
 
 	const systemPrompt = format(AGENT_SYSTEM_PROMPT_HITL_MEMORY, {
 		toolsPrompt: HITL_MEMORY_TOOLS_PROMPT,
+		date: new Date().toISOString().split('T')[0],
 		background: DEFAULT_BACKGROUND,
 		responsePreferences: responsePreferences,
 		calPreferences: calPreferences

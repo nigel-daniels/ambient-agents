@@ -249,6 +249,7 @@ async function llmCall(state: state, config: LangGraphRunnableConfig) {
 
 	const systemPrompt = format(AGENT_SYSTEM_PROMPT, {
 		toolsPrompt: TOOLS_PROMPT,
+		date: new Date().toISOString().split('T')[0],
 		background: DEFAULT_BACKGROUND,
 		responsePreferences: responsePreferences,
 		calPreferences: calPreferences
@@ -349,7 +350,7 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 
 				case 'edit':
 					// Check this is a valid tool to edit
-					if (toolCall.name == 'write_email' || toolCall.name == 'schedule_meeting' ) {
+					if (toolCall.name == 'send_email_tool' || toolCall.name == 'schedule_meeting_tool' ) {
 						// Get the tool
 						const tool = toolsByName[toolCall.name];
 						// Get the new args

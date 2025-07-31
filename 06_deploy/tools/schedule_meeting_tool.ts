@@ -68,7 +68,7 @@ async function sendCalendarInvite(attendees, title, startTime, endTime, organize
 		};
 
 		// Create the event
-		event = await service.evemts.insert({calendarId: 'primary', body: event});
+		event = await service.events.insert({calendarId: 'primary', resource: event});
 
 		logger.info(`Meeting created ${event.htmlLink}`);
 		return true;
