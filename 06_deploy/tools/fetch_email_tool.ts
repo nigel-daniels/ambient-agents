@@ -1,35 +1,35 @@
 import createLogger from 'logging';
 import { tool } from '@langchain/core/tools';
-import google from 'googleapis';
+import { google } from 'googleapis';
 import { z } from 'zod';
 import { getCredentials } from './tool_utils.ts';
 
 const logger = createLogger('Fetch Email Tool');
 
 // Fetch recent emails for the given address
-export const fetchEmailsTool = tool((input: {emailAddress: string; minutesSince: int}) => {
+export const fetchEmailsTool = await tool(async (input: {emailAddress: string; minutesSince: int}) => {
 	// Default minutes since to 30 if not provided
-	minutesSince = minutesSince ? minutesSince : 30;
+	const minutesSince = input.minutesSince ? input.minutesSince : 30;
 
-	const emails = Array.from(fetchGroupEmails(emailAddress, minutesSince));
+	const emails = Array.from(await fetchGroupEmails(input.emailAddress, minutesSince));
 
 	if (emails.length == 0) {return 'No new emails found.';}
 
 	const result = `Found ${emails.length} new emails:\n\n`;
 
-	emails.foreach => (email, i) {
-		if (email.userResponse ?? false) {
-			result += `${i}. You already responded to this email (Thread ID: ${email.threadId})\n\n`;
+	for (let i = 0; i < emails.length; i++) {
+		if (emails[i].userResponse ?? false) {
+			result += `${i}. You already responded to this email (Thread ID: ${emails[i].threadId})\n\n`;
 			continue;
 		}
 
-		result += `${i}. From: ${email.fromEmail}\n`;
-		result += `   To: ${email.toEmail}\n`;
-		result += `   Subject: ${email.subject}\n`;
-		result += `   Time: ${email.sendTime}\n`;
-		result += `   ID: ${email.id}\n`;
-		result += `   Thread ID: ${email.threadId}\n`;
-		result += `   Content: ${email.pageContent.slice(0, 200)}...\n\n`;
+		result += `${i}. From: ${emails[i].fromEmail}\n`;
+		result += `   To: ${emails[i].toEmail}\n`;
+		result += `   Subject: ${emails[i].subject}\n`;
+		result += `   Time: ${emails[i].sendTime}\n`;
+		result += `   ID: ${emails[i].id}\n`;
+		result += `   Thread ID: ${emails[i].threadId}\n`;
+		result += `   Content: ${emails[i].pageContent.slice(0, 200)}...\n\n`;
 	}
 
 	return result;
@@ -48,7 +48,7 @@ export const fetchEmailsTool = tool((input: {emailAddress: string; minutesSince:
 // Fetch recent emails from Gmail that involve the specified email address.
 // This function retrieves emails where the specified address is either a sender or recipient.
 // These a returned in an assistant frieldly format.
-function* fetchGroupEmails(emailAddress, minutesSince, gmailToken = null, includeRead = false, skipFilters = false) {
+async function* fetchGroupEmails(emailAddress, minutesSince, gmailToken = null, includeRead = false, skipFilters = false) {
 
 	try {
 		const creds = getCredentials();
@@ -70,10 +70,10 @@ function* fetchGroupEmails(emailAddress, minutesSince, gmailToken = null, includ
 			return;
 		}
 
-		const service =  google.gmail({version: 'v1', creds});
+		const service =  google.gmail({version: 'v1', auth: creds});
 
 		// Calculate the time filter
-		const after = const after = Math.floor((Date.now() - minutesSince * 60 * 1000) / 1000);
+		const after = Math.floor((Date.now() - minutesSince * 60 * 1000) / 1000);
 
 		// Set up a search query for:
 		// - Emails sent to/from an address
@@ -106,7 +106,7 @@ function* fetchGroupEmails(emailAddress, minutesSince, gmailToken = null, includ
   				pageToken: nextPageToken
 			});
 
-			const results = res1.data;
+			const results = res.data;
 
 			if ('messages' in results) {
 				const newMessages = results.messages;

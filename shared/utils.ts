@@ -193,30 +193,3 @@ export async function displayMemoryContent(store, namespace = null) {
 
 	console.log('================================================');
 }
-
-
-// Format Gmails into a formated string for display
-export function formatGmailMarkdown(subject, author, to, emailThread, emailId = null) {
-	const idSection = emailId ? `\n**ID**: ${emailId}` : '';
-
-	if (emailThread && (emailThread.trim().startsWith('<!DOCTYPE') || emailThread.trim().startsWith('<html') || '<body' in emailThread)) {
-		emailThread = convert(emailThread, {
-			wordwrap: false,
-			selectors: [
-				{selector: 'a', options: {ignoreHref: true}},
-				{selector: 'img', format: 'skip'}
-			]
-		});
-	}
-
-	return `
-
-**Subject**: ${subject}
-**From**: ${author}
-**To**: ${to}${idSection}
-
-${emailThread}
-
----
-`;
-}

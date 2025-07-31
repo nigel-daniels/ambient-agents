@@ -10,7 +10,7 @@ import format from 'string-template';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { StateGraph, START, END, Command, LangGraphRunnableConfig, interrupt } from '@langchain/langgraph';
-
+import { HumanInterrupt, HumanResponse } from '@langchain/langgraph/prebuilt';
 
 //////////// LLMs ////////////
 const llmNode = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});
@@ -176,7 +176,7 @@ async function triageInterruptHandler(state: state, config: LangGraphRunnableCon
 	};
 
 	// Agent Inbox returns a Record with a single key `type` that can be `accept`, `edit`, `ignore`, or `response`.
-	const response = interrupt([request])[0];
+	const response = interrupt<HumanInterrupt, HumanResponse[]>(request)[0];
 
 	// If user provides feedback, go to response agent and use feedback to respond to email
 	switch (response.type) {
@@ -325,10 +325,11 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 
 
 			// INTERRUPT send to the Agent inbox and wait
-			const response = await interrupt([request])[0];
+			const response = interrupt<HumanInterrupt, HumanResponse[]>(request)[0];
 
 			// RESPONSE handeling
 			// Now lets handle the response we got back
+			console.log('Response: ' + JSON.stringify(response, null, 2));
 			switch (response.type) {
 				case 'accept':
 					// Execute the tool with original args
@@ -370,6 +371,7 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 						const observation = await tool.invoke(editedArgs);
 						result.push({role: 'tool', content: observation, tool_call_id: toolCall.id});
 
+						console.log('result: ' + JSON.stringify(result, null, 2));
 						// Memory Note: Now let's update the preferences for the appropriate tool call
 						if (toolCall.name == 'write_email') {
 							await updateMemory(store, ['email_assistant', 'response_preferences'], [
@@ -528,4 +530,4 @@ export const overallWorkflow = new StateGraph(state)
 export const emailAssistant = overallWorkflow.compile();
 
 // Visualize the graph
-showGraph(emailAssistant, true);
+//showGraph(emailAssistant, true);

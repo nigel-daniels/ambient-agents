@@ -1,21 +1,26 @@
+import fs from 'node:fs';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
-import { Client } from "langsmith";
-import crypto from 'crypto';
+import { Client } from '@langchain/langgraph-sdk';
+import crypto from 'node:crypto';
 import { v5 as uuid5 } from 'uuid';
+import { google } from 'googleapis';
 
 const program = new Command();
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const SECRETS_DIR = __dirname + '/.secrets';
 
 program
 	.description('Simple Gmail ingestion for LangGraph with reliable tracing')
 	.requiredOption('-e --email <email>', 'Email address to fetch messages for')
-	.option('-m --minutes-since <number>', 'Only retrieve emails newer than this many minutes').default(120, '2 hours')
-	.option('-g --graph-name <string>', 'Name of the LangGraph to use').default('assistant', 'assistant')
-	.option('-u --url <url>', 'URL of the LangGraph deployment', ).default('http://127.0.0.1:2024', 'http://127.0.0.1:2024')
-	.option('--early', 'Early stop after processing one email').default(true)
-	.option('--include-read', 'Include emails that have already been read').default(true)
-	.option('--skip-filters', 'Skip filtering of emails').default(true);
+	.option('-m --minutes-since <number>', 'Only retrieve emails newer than this many minutes', 120)
+	.option('-g --graph <graph>', 'Name of the LangGraph to use', 'assistant')
+	.option('-u --url <url>', 'URL of the LangGraph deployment', 'http://localhost:2024')
+	.option('--early', 'Early stop after processing one email', true)
+	.option('--include-read', 'Include emails that have already been read', true)
+	.option('--skip-filters', 'Skip filtering of emails', true);
 
 program.parse();
 await fetchAndProcessEmails(program.opts());
@@ -31,13 +36,13 @@ async function fetchAndProcessEmails(options) {
 		return 1;
 	}
 
-	const service =  google.gmail({version: 'v1', credentials});
+	const service =  google.gmail({version: 'v1', auth: credentials});
 
 	let processedCount = 0;
 
 	try {
 		// Get the email address
-		emailAddress = options.email;
+		const emailAddress = options.email;
 
 		// Construct the Gmail query
 		let query = `to: ${emailAddress} OR from: ${emailAddress}`;
@@ -60,7 +65,8 @@ async function fetchAndProcessEmails(options) {
 			userId: 'me',
 			q: query
 		});
-		const messages = result.messages ? result.messages : [];
+
+		const messages = result.data.messages ? result.data.messages : [];
 
 		if (messages.length == 0) {
 			console.log('No emails found matching the criteria');
@@ -70,7 +76,7 @@ async function fetchAndProcessEmails(options) {
 		console.log(`found ${messages.length} emails`);
 
 		// Process each email
-		messages.forEach((messageInfo, i) => {
+		for (let i = 0; i < messages.length; i++) {
 			// Stop early if requested
 			if (options.early && (i > 0)) {
 				console.log(`Early stop after processing ${i} emails`);
@@ -79,8 +85,8 @@ async function fetchAndProcessEmails(options) {
 
 			// Get the full message
 			const message = await service.users.messages.get({
-				userId: me,
-				id: messageInfo.id
+				userId: 'me',
+				id: messages[i].id
 			});
 
 			const emailData = extractEmailData(message);
@@ -91,10 +97,10 @@ async function fetchAndProcessEmails(options) {
 
 			const {threadId, run} = await ingestEmailToLanggraph(emailData, options.graph, options.url);
 
-			processCount += 1;
-		});
+			processedCount += 1;
+		}
 
-		console.log(`\nProcesses ${processCount} emails successfully`);
+		console.log(`\nProcesses ${processedCount} emails successfully`);
 		return 0;
 
 	} catch (err) {
@@ -114,9 +120,9 @@ function loadGmailCredentials() {
 	if(process.env.GMAIL_TOKEN) {
 		try {
 			tokenData = JSON.parse(process.env.GMAIL_TOKEN);
-			logger.info('Using GMAIL_TOKEN environment variable.');
+			console.log('Using GMAIL_TOKEN environment variable.');
 		} catch (err) {
-			logger.warn(`Could not parse GMAIL_TOKEN environment variable: ${err}`);
+			console.log(`Could not parse GMAIL_TOKEN environment variable: ${err}`);
 		}
 	}
 
@@ -125,22 +131,22 @@ function loadGmailCredentials() {
 		if (fs.existsSync(tokenPath)) {
 			try {
 				tokenData = JSON.parse(fs.readFileSync(tokenPath));
-				logger.info(`Using token from ${tokenPath}`);
+				console.log(`Using token from ${tokenPath}`);
 			} catch(err) {
-				logger.warn(`Could not load token from ${tokenPath}`);
+				console.log(`Could not load token from ${tokenPath}`);
 			}
 		}
 	}
 
 	if (!tokenData) {
-		logger.error('Could not find valid token data in any location.');
+		console.log('Could not find valid token data in any location.');
 		return null;
 	}
 
 	try {
 		return google.auth.fromJSON(tokenData);
 	} catch(err) {
-		logger.error(`Error creating credentials object: ${err}`);
+		console.log(`Error creating credentials object: ${err}`);
 		return null;
 	}
 }
@@ -148,48 +154,53 @@ function loadGmailCredentials() {
 
 // Extract key information from a Gmail message.
 function extractEmailData(message) {
-	const headers = message.payload.headers;
+	const headers = message.data.payload.headers;
 
-	const subject = (processHeaders.find(header => header.name === 'Subject')?.value || 'No Subject').trim();
-	const fromEmail = (processHeaders.find(header => header.name === 'From')?.value || 'Unknown Sender').trim();
-	const toEmail = (processHeaders.find(header => header.name === 'To')?.value || 'Unknown Recipient').trim();
-	const date = (processHeaders.find(header => header.name === 'Date')?.value || 'Unknown Date').trim();
+	const subject = (headers.find(header => header.name === 'Subject')?.value || 'No Subject').trim();
+	const fromEmail = (headers.find(header => header.name === 'From')?.value || 'Unknown Sender').trim();
+	const toEmail = (headers.find(header => header.name === 'To')?.value || 'Unknown Recipient').trim();
+	const date = (headers.find(header => header.name === 'Date')?.value || 'Unknown Date').trim();
 	const parsedTime = new Date(date);
 
-	const content = extractMessagePart(message.payload);
+	const content = extractMessagePart(message.data.payload);
 
 	return {
 		fromEmail: fromEmail,
 		toEmail: toEmail,
 		subject: subject,
 		pageContent: content,
-		id: message.id,
-		threadId: message.threadId,
+		id: message.data.id,
+		threadId: message.data.threadId,
 		sendTime: parsedTime.toISOString().split('T')[0]
 	};
 }
 
 // Extract content from a message part.
 function extractMessagePart(payload) {
-	if (payload.body?.data) {
-  		// Handle base64 encoded content
-  		const data = payload.body.data;
-		const decoded = Buffer.from(data, 'base64url').toString('utf-8');
-		return decoded;
+	// Check we got some message parts
+	if (payload.parts) {
+		for (const part of payload.parts) {
+			// Try returning the plain text message
+			if (part.mimeType == 'text/plain') {
+				const data = JSON.stringify(part.body.data);
+				return Buffer.from(data, 'base64url').toString('utf-8');
+			}
+			// Try returning an html message
+			if (part.mimeType == 'text/html') {
+				const data = JSON.stringify(part.body.data);
+				return Buffer.from(data, 'base64url').toString('utf-8');
+			}
+			// Otherwise try a recursive search for the content
+			const content = extractMessagePart(part);
+			if (content) {
+				return content;
+			}
+		}
 	}
 
-	if (payload.parts) {
-		let textParts = [];
-
-		for (const part of payload.parts) {
-			const content = extractMessagePart(part);
-
-			if (content) {
-				textParts.push(content);
-			}
-
-			return textParts.join('\n');
-		}
+	// Not multipart? Try getting data
+	if (payload.body?.data) {
+		return Buffer.from(payload.body.data, 'base64url').toString('utf-8');
 	}
 
 	return '';
@@ -199,7 +210,7 @@ function extractMessagePart(payload) {
 // Ingest an email to LangGraph.
 async function ingestEmailToLanggraph(emailData, graphName, url) {
 	// connect to Langraph Server
-	const client = new Client();
+	const client = new Client({ apiUrl: url });
 
 	// Create a consistent UUID for the thread
 	const rawThreadId = emailData.threadId;
@@ -209,12 +220,12 @@ async function ingestEmailToLanggraph(emailData, graphName, url) {
 	console.log(`Gmail thread ID: ${rawThreadId} -> LangGraph thread ID: ${threadId}`);
 
 	let threadExists = false;
-	let threadInfo = await client.threads.get(threadId);
-
-	if (threadInfo) {
+	let threadInfo = null;
+	try {
+		threadInfo = await client.threads.get(threadId);
 		console.log(`Found existing thread: ${threadId}`);
 		threadExists = true;
-	} else {
+	} catch(err) {
 		console.log(`Creating new thread: ${threadId}`);
 		threadInfo = await client.threads.create({threadId: threadId});
 	}
@@ -236,6 +247,7 @@ async function ingestEmailToLanggraph(emailData, graphName, url) {
 		} catch (err) {
 			console.log(`Error listing/deleting runs: ${err}`)
 		}
+	}
 
 	await client.threads.update(threadId, {metadata: {emailId: emailData.id}});
 
@@ -255,7 +267,7 @@ async function ingestEmailToLanggraph(emailData, graphName, url) {
 	});
 
 	console.log(`Run created successfully with thread ID: ${threadId}`);
-	}
+
 
 	return {threadId, run};
 }

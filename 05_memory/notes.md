@@ -208,10 +208,35 @@ Additional preferences:
 ```
 ## Deploy
 
-There is a `langgraph.json` file set up to run our `emailAsssitant` locally. We can start this by running:
+There is a `langgraph.json` file set up to run our `memory_assistant` locally. We can start this by running:
 ```sh
 npx @langchain/langgraph-cli dev
 ```
+This will open LangGraph Studio (check you are looking at the `memory_assistant`). Test this with an e-mail such as:
+```json
+{
+"emailInput": {
+    "author": "Alice Smith <alice.smith@company.com>",
+    "to": "John Doe <john.doe@company.com>",
+    "subject": "Quick question about API documentation",
+	"emailThread": "Hi John,\n\nI was reviewing the API documentation for the new authentication service and noticed a few endpoints seem to be missing from the specs. Could you help clarify if this was intentional or if we should update the docs?\n\nSpecifically, I'm looking at:\n- /auth/refresh\n- /auth/validate\n\nThanks!\nAlice"
+	}
+}
+```
+This will run until we hit the interrupt, this time we can click on the *Memory* button at the top of the graph display. This will open a display of the memory found in our local deployment. You can examine the current content of each of the memories we set up (initially these will be the defaults). This is a view of the `json` store in the local `.langgraph_api` directory.
+
+Now open the [Agent Inbox](https://dev.agentinbox.ai/) (you may need to set the inbox up as we did before). This time, to exercise the memory, let's *Edit* the *Content* argument to be much more terse:
+```
+Hi Alice,
+
+Thanks! I will take care of that!
+
+Best regards,
+John
+```
+When we hit submit the graph will finish the run. If we examine the run for the overall `email_assistant` in LangSmith we can see after the call to the `write_email` tool was made the call to *ChatOpenAI* considered our updated response and in the *Output* we can see the updated profile with a justification for the change.
+
+Returning to LangGraph Studio we can agin look at the memory but this time note the `response_preferences` have been updated more recently and now include the new suggestions to the LLM.
 
 ## Notes
 In our example the store we use is very simple:

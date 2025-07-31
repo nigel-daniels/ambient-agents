@@ -212,3 +212,26 @@ There is a `langgraph.json` file set up to run our `emailAsssitant` locally. We 
 ```sh
 npx @langchain/langgraph-cli dev
 ```
+This should open in our browser and let us see the following graph:
+![Human in the Loop Graph](./images/assistent_hitl.png)
+We can now try sending an email through the system. In the input section below the graph, edit the JSON and try the following:
+```json
+{
+"emailInput": {
+    "author": "Alice Smith <alice.smith@company.com>",
+    "to": "John Doe <john.doe@company.com>",
+    "subject": "Quick question about API documentation",
+	"emailThread": "Hi John,\n\nI was reviewing the API documentation for the new authentication service and noticed a few endpoints seem to be missing from the specs. Could you help clarify if this was intentional or if we should update the docs?\n\nSpecifically, I'm looking at:\n- /auth/refresh\n- /auth/validate\n\nThanks!\nAlice"
+	}
+}
+```
+When we run this it will run as far as the `interrupt_handler`. At this point out threads are stored in the `.langgraph_api` directory as this is a local deployment, a hosted deployment uses Postgres. We can connect with the interrupted threads with the Agent Inbox using this link [dev.agentinbox.ai](https://dev.agentinbox.ai/) (Note on a Mac I found I had problems in Safari so I used Opera).
+
+![Agent Inbox Setup](./images/agent_inbox_setup.png)
+
+The first time this opens we need to set up our inbox, here we can set the following:
+* **Assistant/Graph ID**: The name in `langgraph.json`, in this case `hitl_assistant`.
+* **Deployment URL:**: Where to connect to the graph, in this case locally, `http://localhost:2024`.
+* **Name**: Your own identifier for the graph, for example `HITL Assistant`.
+
+When we create this the Agent Inbox gives us a view of the stored threads and allows us interact with them. In this case we can see the interrupted `write_email` with *Requires Action* next to it. Clicking on the interrupt let's us see the interrupted thread and let's us take the available action we want. These are the actions we defined in our code. In this case we could review the email and click the *Accept* button to send the email. What this did was return a `Command` to our graph to continue the thread.

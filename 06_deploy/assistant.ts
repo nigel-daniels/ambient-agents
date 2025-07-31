@@ -3,14 +3,15 @@ import 'dotenv/config';
 import { ChatOpenAI } from '@langchain/openai';
 
 import { StateGraph, START, END, Command, LangGraphRunnableConfig, interrupt } from '@langchain/langgraph';
+import { HumanInterrupt, HumanResponse } from '@langchain/langgraph/prebuilt';
 
 import { fetchEmailsTool, sendEmailTool, checkCalendarTool, scheduleMeetingTool, question, done, markAsRead } from './tools';
 import { TRIAGE_SYSTEM_PROMPT, TRIAGE_USER_PROMPT, AGENT_SYSTEM_PROMPT,
 	DEFAULT_TRIAGE_INSTRUCTIONS, DEFAULT_BACKGROUND, DEFAULT_RESPONSE_PREFERENCES,
 	DEFAULT_CAL_PREFERENCES, MEMORY_UPDATE_INSTRUCTIONS,
 	MEMORY_UPDATE_INSTRUCTIONS_REINFORCEMENT, TOOLS_PROMPT } from './prompts.ts';
-import { state, routerSchema, userPreferencesSchema } from '../shared/schemas.ts';
-import { formatForDisplay, formatGmailMarkdown } from '../shared/utils.ts';
+import { state, routerSchema, userPreferencesSchema } from './schemas.ts';
+import { formatForDisplay, formatGmailMarkdown } from './utils.ts';
 
 import format from 'string-template';
 
@@ -21,7 +22,7 @@ const llmAgent = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});
 const llmMemory = new ChatOpenAI({model: 'gpt-4.1', temperature: 0}); // Memory Note: Added for use in the memory updater
 
 // First let's set up the tools lists
-const tools = [fetchEmailsTool, sendEmailTool, scheduleMeetingTool, checkCalendarAvailability, question, done];
+const tools = [fetchEmailsTool, sendEmailTool, scheduleMeetingTool, checkCalendarTool, question, done];
 const toolsByName = tools.reduce((acc, tool) => {
   acc[tool.name] = tool;
   return acc;
@@ -84,7 +85,8 @@ async function triageRouter(state: state, config: LangGraphRunnableConfig) {
 	let update = {};
 
 	// Destructure the emailInput and set up the user prompt
-	const { author, to, subject, emailThread, emailId } = state.emailInput;
+	const { from: author, to, subject, body: emailThread, id: emailId } = state.emailInput;
+
 	const userPrompt = format(TRIAGE_USER_PROMPT,{
 		author: author,
 		to: to,
@@ -122,7 +124,7 @@ async function triageRouter(state: state, config: LangGraphRunnableConfig) {
 				classificationDecision: result.classification,
 				messages: [{
 					role: 'user',
-					content: 'Respond to the email: \n\n' + formatEmailMarkdown(subject, author, to, emailThread)
+					content: 'Respond to the email: \n\n' + emailMarkdown
 				}]
 			};
 			break;
@@ -161,9 +163,10 @@ async function triageInterruptHandler(state: state, config: LangGraphRunnableCon
 	const store = config.store;
 
 	// destructure the email input and format to markdown
-	const {author, to, subject, emailThread, emailId} = state.emailInput;
+	const { from: author, to, subject, body: emailThread, id: emailId } = state.emailInput;
 	const emailMarkdown = formatGmailMarkdown(author, to, subject, emailThread, emailId);
 
+	console.log('emailMarkdown: ' + JSON.stringify(emailMarkdown, null, 2));
 	// Construct a message
 	const messages = [{
 		role: 'user',
@@ -188,7 +191,7 @@ async function triageInterruptHandler(state: state, config: LangGraphRunnableCon
 	};
 
 	// Agent Inbox returns a Record with a single key `type` that can be `accept`, `edit`, `ignore`, or `response`.
-	const response = interrupt([request])[0];
+	const response = interrupt<HumanInterrupt, HumanResponse[]>(request)[0];
 
 	// If user provides feedback, go to response agent and use feedback to respond to email
 	switch (response.type) {
@@ -281,7 +284,7 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 		if (hitlTools.includes(toolCall.name)) {
 			// SETUP of the interrupt
 			// Get the email input
-			const {author, to, subject, emailThread, emailId} = state.emailInput;
+			const { from: author, to, subject, body: emailThread, id: emailId } = state.emailInput;
 			const originalEmailMarkdown = formatGmailMarkdown(author, to, subject, emailThread, emailId);
 			// Format the tool call for display
 			const toolDisplay = formatForDisplay(toolCall);
@@ -332,7 +335,7 @@ async function interruptHandler(state: state, config: LangGraphRunnableConfig) {
 
 
 			// INTERRUPT send to the Agent inbox and wait
-			const response = await interrupt([request])[0];
+			const response = interrupt<HumanInterrupt, HumanResponse[]>(request)[0];
 
 			// RESPONSE handeling
 			// Now lets handle the response we got back
@@ -540,11 +543,7 @@ export const overallWorkflow = new StateGraph(state)
 		ends: ['response_agent', END]
 	})
 	.addNode('response_agent', agent)
-	.addNode('mark_as_read_node', markAsReadNode)
 	.addEdge(START, 'triage_router')
-	.addEdge('mark_as_read_node', END);
+	.addEdge('response_agent', END);
 
 export const emailAssistant = overallWorkflow.compile();
-
-// Visualize the graph
-showGraph(emailAssistant, true);

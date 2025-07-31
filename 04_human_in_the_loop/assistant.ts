@@ -9,6 +9,7 @@ import format from 'string-template';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { StateGraph, START, END, Command, interrupt } from '@langchain/langgraph';
+import { HumanInterrupt, HumanResponse } from '@langchain/langgraph/prebuilt';
 
 //////////// LLMs ////////////
 const llmNode = new ChatOpenAI({model: 'gpt-4.1', temperature: 0});
@@ -125,7 +126,7 @@ async function triageInterruptHandler(state: state) {
 	};
 
 	// Agent Inbox returns a Record with a single key `type` that can be `accept`, `edit`, `ignore`, or `response`.
-	const response = interrupt([request])[0];
+	const response = interrupt<HumanInterrupt, HumanResponse[]>(request)[0];
 
 	// If user provides feedback, go to response agent and use feedback to respond to email
 	switch (response.type) {
@@ -255,7 +256,7 @@ async function interruptHandler(state:state) {
 
 
 			// INTERRUPT send to the Agent inbox and wait
-			const response = await interrupt([request])[0];
+			const response = await interrupt<HumanInterrupt, HumanResponse[]>(request)[0];
 
 			// RESPONSE handeling
 			// Now lets handle the response we got back

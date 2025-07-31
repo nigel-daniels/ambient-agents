@@ -1,11 +1,15 @@
 import createLogger from 'logging';
-import path from 'node:path';
+import path, { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import { tool } from '@langchain/core/tools';
-import google from 'googleapis';
+import { google } from 'googleapis';
 import { z } from 'zod';
 
-const ROOT = __dirname.split(path.sep).pop();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const dirArray = __dirname.split(path.sep);
+const ROOT = dirArray.slice(0,-1).join('/');
 const SECRETS_DIR = ROOT + '/.secrets';
 
 const logger = createLogger('Gmail Shared Tools');

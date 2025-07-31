@@ -2,18 +2,22 @@
 So far we have been building the email assistant with dummy tools and testing it locally. Now lets take a look at how this could be deployed to manage a real email in-box, in this case Gmail and Google Calendar accounts.
 
 ## Setting up Gmail
-For this I created a gmail account called `aa_test` and assigned a gmail address to the account. This is the account I'll use for this exercise.
+For this I created a gmail account called `aa_test` and assigned a gmail address to the account. This is the account I'll use for this exercise. You can use your own account or create one for the testing.
 
 ## Set-up APIs and access
 For this we will need to set up access to APIs, authentication and then configure some authentication files:
 ### API access
 1. For Gmail access, in your account, [enable the Gmail API](https://developers.google.com/workspace/gmail/api/quickstart/nodejs#enable_the_api). When you click the enable API button you may need to set up a project for the API access. I created one called `emailAssistant`. Once you have done this you can proceed to enable the API.
 2. For Google Calendar access, in your account, [enable the Google Calendar API](https://developers.google.com/workspace/calendar/api/quickstart/nodejs). This time just check you are in the same project and enable the API.
+#### Set up scopes
+1. Go to the `emailAssistant` project and select **Data Access**.
+2. In the Data Access tab click the **Add or remove scopes** and check the `.../auth/gmail.send` scope, then click **Update**.
+3. The scope should now appear in the *Your sensitive scopes* section, then click **Save**
 ### Create OAuth credentials
 1. Authorize a desktop application [here](https://developers.google.com/workspace/gmail/api/quickstart/nodejs#authorize_credentials_for_a_desktop_application). When you click Goto Clients, ensure you are in the correct project.
 2. It is possible you may need to create an application, when you do select external as the type.
 3. Go to the **Clients** tab.
-4. Then click **+ Create New Client**.
+4. Then click **Create New Client**.
 5. Select `Desktop app` as the type.
 6. When the **OAuth client created** modal pops-up click on the **Download JSON** option and keep that file for the next step.
 #### Set-up for testing
@@ -41,10 +45,13 @@ The key difference between the previous assistants and the Gmail version is, thi
 The additional tools `markEmailAsRead` and the utility to get Gmail credentials `getCredentials` can be found in:
 * [Tool utilities](./tools/tool_utils.ts)
 
-## Local Deployment
+## Prompt updates
+In the `prompts.ts` file update the `DEFAULT_BACKGROUND` prompt to match your details.
+
+## Hosted Deployment
 1. Set up the authentication, then run:
 ```
-langgraph dev
+npx @langchain/langgraph-cli dev
 ```
 2. In another terminal session run the ingest script (with appropriate parameters):
 ```

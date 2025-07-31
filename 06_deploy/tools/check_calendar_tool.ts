@@ -1,6 +1,6 @@
 import createLogger from 'logging';
 import { tool } from '@langchain/core/tools';
-import google from 'googleapis';
+import { google } from 'googleapis';
 import { createMimeMessage } from 'mimetext/gas';
 import { format } from 'date-fns';
 import { z } from 'zod';
@@ -10,9 +10,9 @@ import { getCredentials } from './tool_utils.ts';
 const logger = createLogger('Check Calendar Tool');
 
 
-export const checkCalendarTool = tool((input: {dates: [string]}) => {
+export const checkCalendarTool = await tool(async (input: {dates: [string]}) => {
 	try {
-		const events = await getCalendarEvents(dates);
+		const events = await getCalendarEvents(input.dates);
 
 		return events;
 	} catch(err) {
@@ -31,7 +31,7 @@ async function getCalendarEvents(dates) {
 	try {
 		// Set up the google service
 		const creds = getCredentials();
-		const service =  google.calendar({version: 'v3', creds});
+		const service =  google.calendar({version: 'v3', auth: creds});
 
 		const result = 'Calendar events:\n\n';
 

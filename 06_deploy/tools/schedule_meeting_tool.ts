@@ -1,6 +1,6 @@
 import createLogger from 'logging';
 import { tool } from '@langchain/core/tools';
-import google from 'googleapis';
+import { google } from 'googleapis';
 import { createMimeMessage } from 'mimetext/gas';
 import { format } from 'date-fns';
 import { z } from 'zod';
@@ -10,14 +10,14 @@ import { getCredentials } from './tool_utils.ts';
 const logger = createLogger('Schedule Meeting Tool');
 
 
-export const scheduleMeetingTool = tool((input: {attendees: [string], title: string, startTime: string, endTime: string, organizerEmail: string, timezone: string}) => {
+export const scheduleMeetingTool = await tool(async (input: {attendees: [string], title: string, startTime: string, endTime: string, organizerEmail: string, timezone: string}) => {
 	try {
-		timezone = timezone ? timezone : 'America/Los_Angeles';
+		const timezone = input.timezone ? input.timezone : 'America/Los_Angeles';
 
-		const success = await sendCalendarInvite(attendees, title, startTime, endTime, organizerEmail, timezone);
+		const success = await sendCalendarInvite(input.attendees, input.title, input.startTime, input.endTime, input.organizerEmail, timezone);
 
 		if (success) {
-			return `Meeting '${title}' scheduled successfully from ${startTime} to ${endTime} with ${attendees.length} attendees`;
+			return `Meeting '${input.title}' scheduled successfully from ${input.startTime} to ${input.endTime} with ${input.attendees.length} attendees`;
 		} else {
 			return 'Failed to schedule meeting';
 		}
@@ -34,7 +34,7 @@ export const scheduleMeetingTool = tool((input: {attendees: [string], title: str
 		startTime: z.string().describe('Meeting start time in ISO format (YYYY-MM-DDTHH:MM:SS)'),
 		endTime: z.string().describe('Meeting end time in ISO format (YYYY-MM-DDTHH:MM:SS)'),
 		organizerEmail: z.string().describe('Email address of the meeting organizer'),
-		timezone: z.optional().string().describe('Timezone for the meeting (default: America/Los_Angeles)')
+		timezone: z.optional(z.string()).describe('Timezone for the meeting (default: America/Los_Angeles)')
 	})
 });
 
@@ -43,7 +43,7 @@ export const scheduleMeetingTool = tool((input: {attendees: [string], title: str
 async function sendCalendarInvite(attendees, title, startTime, endTime, organizerEmail, timezone) {
 	try {
 		const creds = getCredentials();
-		const service =  google.calendar({version: 'v3', creds});
+		const service =  google.calendar({version: 'v3', auth: creds});
 
 		// Set up the event
 		let event = {
