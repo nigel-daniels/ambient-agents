@@ -30,3 +30,14 @@ export const userPreferencesSchema = z.object({
 	chainOfThought: z.string().describe('Reasoning about which user preferences need to add / update if required'),
 	userPreferences: z.string().describe('Updated user preferences')
 });
+
+// This is the state for the cron service
+export const jobKickoff = z.object({
+	email: z.email(),
+	minutesSince: z.number().default(60),
+	graph: z.string().default('assistant'),
+	url: z.url().default('http://localhost:2024/'),
+	includeRead: z.boolean().default('false'),
+	early: z.boolean().default('false'),
+	skipFilters: z.boolean().default('false')
+});

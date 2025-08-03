@@ -28,7 +28,8 @@ await fetchAndProcessEmails(program.opts());
 
 
 // Fetch emails from Gmail and process them through LangGraph.
-async function fetchAndProcessEmails(options) {
+export async function fetchAndProcessEmails(options) {
+	console.log(JSON.stringify(options,null,2));
 	const credentials = loadGmailCredentials();
 
 	if (!credentials) {

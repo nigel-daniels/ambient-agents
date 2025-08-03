@@ -208,8 +208,9 @@ Remember:
 // Standard tool descriptions for insertion into prompts
 // Tool descriptions for workflow
 export const TOOLS_PROMPT = `
-1. send_email_tool(emailId, responseText, emailAddress, additionalRecipients) - Send a reply to an email thread
-2. check_calendar_tool(dates) - Check Google Calendar availability for specific dates
-3. schedule_meeting_tool(attendees, title, startTime, endTime, organizerEmail, timezone) - Schedule a meeting and send invites
-4. Done - E-mail has been sent
+1. fetch_emails_tool(emailAddress, minutesSince) - Fetch recent emails from Gmail
+2. send_email_tool(emailId, responseText, emailAddress, additionalRecipients) - Send a reply to an email thread
+3. check_calendar_tool(dates) - Check Google Calendar availability for specific dates
+4. schedule_meeting_tool(attendees, title, startTime, endTime, organizerEmail, timezone) - Schedule a meeting and send invites
+5. Done - E-mail has been sent
 `;

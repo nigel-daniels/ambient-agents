@@ -9,10 +9,6 @@ For this we will need to set up access to APIs, authentication and then configur
 ### API access
 1. For Gmail access, in your account, [enable the Gmail API](https://developers.google.com/workspace/gmail/api/quickstart/nodejs#enable_the_api). When you click the enable API button you may need to set up a project for the API access. I created one called `emailAssistant`. Once you have done this you can proceed to enable the API.
 2. For Google Calendar access, in your account, [enable the Google Calendar API](https://developers.google.com/workspace/calendar/api/quickstart/nodejs). This time just check you are in the same project and enable the API.
-#### Set up scopes
-1. Go to the `emailAssistant` project and select **Data Access**.
-2. In the Data Access tab click the **Add or remove scopes** and check the `.../auth/gmail.send` scope, then click **Update**.
-3. The scope should now appear in the *Your sensitive scopes* section, then click **Save**
 ### Create OAuth credentials
 1. Authorize a desktop application [here](https://developers.google.com/workspace/gmail/api/quickstart/nodejs#authorize_credentials_for_a_desktop_application). When you click Goto Clients, ensure you are in the correct project.
 2. It is possible you may need to create an application, when you do select external as the type.
@@ -48,10 +44,66 @@ The additional tools `markEmailAsRead` and the utility to get Gmail credentials 
 ## Prompt updates
 In the `prompts.ts` file update the `DEFAULT_BACKGROUND` prompt to match your details.
 
-## Hosted Deployment
+## Local Deployment
 1. Set up the authentication, then run:
 ```
 npx @langchain/langgraph-cli dev
 ```
-2. In another terminal session run the ingest script (with appropriate parameters):
+2. Send a test email to the Gmail address you are using. For example:
 ```
+To: <YOUR GMAIL ADDRESS>
+From: <ANOTHER ACCOUNT>
+Subject: Review source code
+Content:
+Hi,
+
+Please can you review the source code I just checked into the test branch? Let me know what you think.
+
+Best regards,
+
+<YOUR NAME>
+```
+3. In another terminal session run the ingest script (with appropriate parameters), for example:
+```
+node ingest.js -e <YOUR GMAIL ADDRESS> --include-read
+```
+This will trigger the collection of the email and submit it to the locally running instance of the assistant.
+
+4. Now check the [Agent Inbox](https://dev.agentinbox.ai/) to review the response email. You may need to set this up, use:
+
+* URL: `http://localhost:2024/`
+* Graph ID: `assistant`
+* Name: `Gmail Assitant`
+
+Find the message you need to review. If you like it, *Accept* the response and it will arrive in your sending accounts in-box.
+
+### Ingest tool
+The `injest.js` tool is a simple tool designed to collect emails from your Gmail account and submit them to the assistant for processing. It is a flexible tool and it accepts the following options:
+
+| Option | Alt name | Parameter | Description | Default | Required |
+|:-------|:---------|:---------:|:------------|:-------:|:--------:|
+|-e|--email|\<email\>|Gmail address to fetch messages for||✅|
+|-m|--minutes-since|\<number\>|Only retrieve emails newer than this many minutes|120||
+|-g|--graph|\<graph\>|Name of the LangGraph to use|'assistant'||
+|-u|--url|<url>|URL of the LangGraph deployment|'http://localhost:2024'||
+||--early||Early stop after processing one email|true||
+||--include-read||Include emails that have already been read|true||
+||--skip-filters||Skip filtering of emails|true||
+|-h|--help||Display help for command|||
+
+## Hosted Deployment
+**Note:** As I do not have a LangSmith Plus account I have not tested these steps. However I have tested the Cron tool locally. Should you find any issues with the Hosted Deployment please update the code/docs appropriately and make a pull request!
+1. Navigate to the deployments page in LangSmith Click *New Deployment*.
+2. Connect it to your fork of the this repo and desired branch (there is a `langgraph.json` file in the root for this).
+3. Give it a name like Yourname-Email-Assistant
+4. Add the following environment variables:
+   * `OPENAI_API_KEY`
+   * `GMAIL_SECRET` - This is the full dictionary in .secrets/secrets.json.
+   * `GMAIL_TOKEN` - This is the full dictionary in .secrets/token.json.
+5. Click Submit.
+6. Get the API URL (https://your-email-assistant-xxx.us.langgraph.app) from the deployment page.
+
+To ingest emails you can use the `ingest.js` tool as we did before but use the API URL from step 6. Again visit the Agent Inbox to decide how to handle the emails.
+
+### Cron Job tool
+To automate the ingest process so you don't have to keep running the ingest tool manually there is a script for setting up a Cron Job to run this process at regular intervals.

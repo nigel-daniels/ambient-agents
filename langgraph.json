@@ -1,8 +1,8 @@
 {
     "dockerfile_lines": [],
     "graphs": {
-	  "assistant": "./assistant.ts:emailAssistant",
-	  "cron": "./cron.ts:graph"
+		"assistant": "./06_deploy/assistant.ts:emailAssistant",
+		"cron": "./06_deploy/cron.ts:graph"
     },
 	"node_version": "20",
 	"env": ".env",
