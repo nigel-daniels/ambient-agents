@@ -1,6 +1,9 @@
 import { jobKickoff } from './schemas.ts';
-import { fetchAndProcessEmails } from 'ingest.js';
-import { StateGraph, START } from '@langchain/langgraph';
+import { fetchAndProcessEmails } from './utils.js';
+import { StateGraph, START, END } from '@langchain/langgraph';
+
+// This is a wrapper to to the fetchAndProcessEmails functon in the form of
+// A graph, the `setup_cron.ts` tool configures it
 
 // Run the email ingestion process
 async function main(state: jobKickoff) {
@@ -25,7 +28,7 @@ async function main(state: jobKickoff) {
 
 		console.log('Starting fetch_and_process_emails...');
 		const result = await fetchAndProcessEmails(args);
-		console.log('fetchAndProcessEmails returned: ' + JSON.stringify(result, null, 2));
+		console.log(`fetchAndProcessEmails returned: ${result}`);
 
 		// Return the result status
 		return {
@@ -42,7 +45,9 @@ async function main(state: jobKickoff) {
 	}
 }
 
+
 export const graph = new StateGraph(jobKickoff)
 	.addNode('ingest_emails', main)
-	.setEdge(START, 'ingest_emails')
+	.addEdge(START, 'ingest_emails')
+	.addEdge('ingest_emails', END)
 	.compile();

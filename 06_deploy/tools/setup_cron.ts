@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { Client } from '@langchain/langgraph-sdk';
+//import { v4 as uuid4 } from 'uuid';
 
 const program = new Command();
 
@@ -11,7 +12,7 @@ program
 	.requiredOption('-u --url <url>', 'URL of the LangGraph deployment')
 	.option('-m --minutes-since <number>', 'Only process emails that are less than this many minutes old', 60)
 	.option('-s --schedule <schedule>', 'Cron schedule expression (default: every 10 minutes)', '*/10 * * * *')
-	.option('-g --graph <graph>', 'Name of the LangGraph to use', 'assistant')
+	.option('-g --graph <graph>', 'Name of the LangGraph to use', 'cron')
 	.option('--include-read', 'Include emails that have already been read', true);
 
 program.parse();
@@ -22,31 +23,40 @@ await main(opts.email, opts.url, opts.minutesSince, opts.schedule, opts.graph, o
 
 
 async function main(email, url, minutesSince, schedule, graph, includeRead) {
-	// Conect to the server
-	const client = url ? new Client({ apiUrl: url}) : new Client({ apiUrl: 'http://localhost:2024/'});
+	try {
+		// Conect to the server
+		const client = new Client({ apiUrl: url});
 
-	const cronInput = {
-		email: email,
-		minutesSince: minutesSince,
-		graph: graph,
-		url: url ? url : 'http://localhost:2024/',
-		includeRead: includeRead,
-		early: 'false',
-		skipFilters: 'false'
-	};
+		// Set up the input to the graph
+		const cronInput = {
+			email: email,
+			minutesSince: minutesSince,
+			graph: graph,
+			url: url,
+			includeRead: includeRead,
+			early: 'false',
+			skipFilters: 'false'
+		};
 
-	const cron = await client.crons.create(
-		'cron',						// Graph name (found in the langgraph.json)
-		{
-			schedule: schedule, 	// A cron schedule expression : https://en.wikipedia.org/wiki/Cron
-			input: cronInput		// Input for the cron graph (see ../cron.ts)
-		}
-	);
+		//const threadId = uuid4();
+		console.log(`Schedule: ${schedule}\n\nInput: ${JSON.stringify(cronInput, null, 2)}`);
+		// Create the cron job
+		const cron = await client.crons.create(
+			graph,						// Graph name (found in the langgraph.json)
+			{
+				schedule: schedule, 	// A cron schedule expression : https://crontab.cronhub.io
+				input: cronInput		// Input for the cron graph (see ../cron.ts)
+			}
+		);
 
-	console.log(`Cron job created successfully with schedule: ${schedule}`);
-	console.log(`Email ingestion will run for: ${email}`);
-	console.log(`Processing emails from the past ${minutesSince} minutes`);
-	console.log(`Using graph: ${graph}`);
+		console.log(`Cron job created successfully with schedule: ${schedule}`);
+		console.log(`Email ingestion will run for: ${email}`);
+		console.log(`Processing emails from the past ${minutesSince} minutes`);
+		console.log(`Using graph: ${graph}`);
 
-	return cron;
+		return cron; // NB: Were returning this but not using it, we should use the cronID to delete this!
+	} catch (err) {
+		console.log(`Cron setup error: ${err}`);
+		return null;
+	}
 }

@@ -80,19 +80,26 @@ Find the message you need to review. If you like it, *Accept* the response and i
 ### Ingest tool
 The `injest.js` tool is a simple tool designed to collect emails from your Gmail account and submit them to the assistant for processing. It is a flexible tool and it accepts the following options:
 
-| Option | Alt name | Parameter | Description | Default | Required |
+| Option | Long option | Parameter | Description | Default | Required |
 |:-------|:---------|:---------:|:------------|:-------:|:--------:|
 |-e|--email|\<email\>|Gmail address to fetch messages for||✅|
-|-m|--minutes-since|\<number\>|Only retrieve emails newer than this many minutes|120||
-|-g|--graph|\<graph\>|Name of the LangGraph to use|'assistant'||
-|-u|--url|<url>|URL of the LangGraph deployment|'http://localhost:2024'||
-||--early||Early stop after processing one email|true||
-||--include-read||Include emails that have already been read|true||
-||--skip-filters||Skip filtering of emails|true||
+|-m|--minutes-since|\<number\>|Only retrieve emails newer than this many minutes|`120`||
+|-g|--graph|\<graph\>|Name of the LangGraph to use|`assistant`||
+|-u|--url|<url>|URL of the LangGraph deployment|`http://localhost:2024`||
+||--early||Early stop after processing one email|`true`||
+||--include-read||Include emails that have already been read|`true`||
+||--skip-filters||Skip filtering of emails|`true`||
 |-h|--help||Display help for command|||
 
+To run this tool you can use the following sort of command with the local service to trigger the assisstant:
+```
+node ingest.js -e <Your Gmail> --include-read
+```
+
 ## Hosted Deployment
+
 **Note:** As I do not have a LangSmith Plus account I have not tested these steps. However I have tested the Cron tool locally. Should you find any issues with the Hosted Deployment please update the code/docs appropriately and make a pull request!
+
 1. Navigate to the deployments page in LangSmith Click *New Deployment*.
 2. Connect it to your fork of the this repo and desired branch (there is a `langgraph.json` file in the root for this).
 3. Give it a name like Yourname-Email-Assistant
@@ -105,5 +112,25 @@ The `injest.js` tool is a simple tool designed to collect emails from your Gmail
 
 To ingest emails you can use the `ingest.js` tool as we did before but use the API URL from step 6. Again visit the Agent Inbox to decide how to handle the emails.
 
+However this is not a convenient way of triggering our remote service. A more useful way is for it to be triggered by a `cron` task on the remote server. To assist with this there is also a `cron.ts` graph that get's deployed. This is a very simple graph that calls the ingest function for us. We use the following tool to configure a `cron` job on the server top call this graph for us.
+
 ### Cron Job tool
-To automate the ingest process so you don't have to keep running the ingest tool manually there is a script for setting up a Cron Job to run this process at regular intervals.
+To automate the ingest process so you don't have to keep running the ingest tool manually there is a script for setting up a Cron Job to run this process at regular intervals. Once you have the `cron` graph running then this can be used to configure the task:
+
+| Option | Long option | Parameter | Description | Default | Required |
+|:-------|:---------|:---------:|:------------|:-------:|:--------:|
+|-e|--email|\<email\>|Gmail address to fetch messages for||✅|
+|-u|--url|<url>|URL of the LangGraph deployment||✅|
+|-m|--minutes-since|\<number\>|Only retrieve emails newer than this many minutes|`60`||
+|-s|--schedule|\<schedule\>|Cron schedule expression (default: every 10 minutes)|`*/10 * * * *`||
+|-g|--graph|\<graph\>|Name of the LangGraph to use|`cron`||
+||--include-read||Include emails that have already been read|`true`||
+|-h|--help||Display help for command|||
+
+**Note:** I have not fully tested this as I do not have a LangSmith Plus account. If you find defects please submit a pull request and I can get this final step working.
+
+To use this tool you can use a command like the one below:
+
+```
+npx tsx setup_cron.ts -e <Your Gmail> -u <Your remote server>
+```

@@ -11,12 +11,12 @@
   "description": "",
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
-    "@langchain/langgraph": "^0.3.11",
+    "@langchain/langgraph": "^0.4.2",
     "@langchain/openai": "^0.6.3",
     "commander": "^14.0.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.1",
-    "googleapis": "^154.0.0",
+    "googleapis": "^154.1.0",
     "html-to-text": "^9.0.5",
     "logging": "^4.2.0",
     "marked": "^15.0.12",
@@ -25,11 +25,11 @@
     "string-template": "^1.0.0",
     "terminal-image": "^3.1.1",
     "uuid": "^11.1.0",
-    "zod": "^4.0.10"
+    "zod": "^4.0.14"
   },
   "devDependencies": {
-    "@langchain/langgraph-cli": "^0.0.52",
-    "langsmith": "^0.3.49",
+    "@langchain/langgraph-cli": "^0.0.56",
+    "langsmith": "^0.3.50",
     "tsx": "^4.20.3",
     "vitest": "^3.2.4"
   }

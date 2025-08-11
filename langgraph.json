@@ -5,7 +5,7 @@
 		"cron": "./06_deploy/cron.ts:graph"
     },
 	"node_version": "20",
-	"env": ".env",
+	"env": "./06_deploy/.env",
 	"dependencies": [
   		"."
 	]
