@@ -5,9 +5,9 @@ This is all based on the LangChain Academy course [Building Ambient Agents with 
 - [LangGraph 101](./01_LangGraph_101/notes.md)
 - [Building Agents](./02_building_agents/notes.md)
 - [Agent Evaluations](./03_agent_evaluation/notes.md)
-- [Human-in-the-Loop](./04-human_in_the_loop/notes.md)
-- [Memory](./05-memory/notes.md)
-- [Deployment](./06-deployment/notes.md)
+- [Human-in-the-Loop](./04_human_in_the_loop/notes.md)
+- [Memory](./05_memory/notes.md)
+- [Deployment](./06_deployment/notes.md)
 
 ## Set-Up
 ### API Keys
