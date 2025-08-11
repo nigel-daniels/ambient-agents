@@ -7,7 +7,7 @@ This is all based on the LangChain Academy course [Building Ambient Agents with 
 - [Agent Evaluations](./03_agent_evaluation/notes.md)
 - [Human-in-the-Loop](./04_human_in_the_loop/notes.md)
 - [Memory](./05_memory/notes.md)
-- [Deployment](./06_deployment/notes.md)
+- [Deployment](./06_deploy/notes.md)
 
 ## Set-Up
 ### API Keys
